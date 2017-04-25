@@ -1,6 +1,10 @@
 class = require "libs.30log"
 tiny = require "libs.tiny"
 bump = require "libs.bump"
+tween = require "libs.tween"
+debugGraph = require "libs.debugGraph"
+animator = require "libs.animator"
+
 require "src.system"
 require "src.utils"
 
@@ -26,10 +30,14 @@ local hero = {
 		x = 100, 
 		y = 100 
 	},
-	sprite = {
-		drawable = love.graphics.newImage("res/5.png")
+	image = {
+		filename = '',
 	},
-	dir = 1
+	animate = {
+		filename = 'res/%d.png',--可以通过%d匹配
+		frameSize = 3,--几个帧
+		duration = 1,--可以是纯数字哦
+	}
 }
 
 local heroB = {
@@ -52,13 +60,12 @@ local heroB = {
 		x = 200, 
 		y = 200 
 	},
-	sprite = {
-		drawable = love.graphics.newImage("res/5.png")
-	},
-	dir = 1
+	image = {
+		filename = ''
+	}
 }
 
-world = tiny.world(CollisionSystem, MoveSystem, SpriteSystem, hero, heroB)
+world = tiny.world(CollisionSystem, MoveSystem, RenderSystem, hero, heroB)
 -- tiny.setSystemIndex (world, system, index)
 
 function love.load()

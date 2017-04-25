@@ -1,4 +1,5 @@
 local DEBUG_AABB = true
+local DEBUG_FPS = true
 
 ----------------------------------------------------
 -- MoveSystem
@@ -26,13 +27,40 @@ function MoveSystem:process(e, dt)
     end
 end
 ----------------------------------------------------
--- SpriteSystem
+-- RenderSystem
 ----------------------------------------------------
-SpriteSystem = tiny.processingSystem()
-SpriteSystem.filter = tiny.requireAll("sprite", "pos")
+RenderSystem = tiny.processingSystem()
+RenderSystem.filter = tiny.requireAll("pos", tiny.requireAny("image", "animate"))
+RenderSystem.fpsGraph = nil
+RenderSystem.memGraph = nil
 
-function SpriteSystem:process(e, dt)
-    love.graphics.draw(e.sprite.drawable, e.pos.x, e.pos.y)
+function RenderSystem:process(e, dt)
+    local image = e.image
+    local animate = e.animate
+
+    if animate then
+        if not animate.anim then
+            local frames = {}
+            for i=1, animate.frameSize do
+                frames[i] = love.graphics.newImage(string.format(animate.filename, i))
+            end
+            animate.anim = animator.newAnimation(frames, animate.duration)
+        end
+        animate.anim:update(dt)
+        animate.anim:draw()
+    else
+    end
+
+    if DEBUG_FPS then
+        if RenderSystem.fpsGraph == nil then
+            RenderSystem.fpsGraph = debugGraph:new('fps', 0, 0)
+            RenderSystem.memGraph = debugGraph:new('mem', 0, 30)
+        end
+        RenderSystem.fpsGraph:update(dt)
+        RenderSystem.memGraph:update(dt)
+        RenderSystem.fpsGraph:draw()
+        RenderSystem.memGraph:draw()
+    end
 end
 ----------------------------------------------------
 -- CollisionSystem
