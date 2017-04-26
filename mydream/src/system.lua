@@ -45,10 +45,15 @@ function RenderSystem:process(e, dt)
                 frames[i] = love.graphics.newImage(string.format(animate.filename, i))
             end
             animate.anim = animator.newAnimation(frames, animate.duration)
+            animate.anim:setLooping()
         end
         animate.anim:update(dt)
-        animate.anim:draw()
+        animate.anim:draw(e.pos.x, e.pos.y)
     else
+        if not image.drawable then
+            image.drawable = love.graphics.newImage(image.filename)
+        end
+        love.graphics.draw(image.drawable, e.pos.x, e.pos.y)
     end
 
     if DEBUG_FPS then

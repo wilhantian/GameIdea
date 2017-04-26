@@ -36,7 +36,7 @@ local hero = {
 	animate = {
 		filename = 'res/%d.png',--可以通过%d匹配
 		frameSize = 3,--几个帧
-		duration = 1,--可以是纯数字哦
+		duration = 0.3,--可以是纯数字哦
 	}
 }
 
@@ -61,7 +61,7 @@ local heroB = {
 		y = 200 
 	},
 	image = {
-		filename = ''
+		filename = 'res/2.png'
 	}
 }
 
