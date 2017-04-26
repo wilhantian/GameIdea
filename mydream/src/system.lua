@@ -79,3 +79,30 @@ function CollisionSystem:process(e, dt)
         aabb:add(e, e.pos.x + e.cols.x, e.pos.y + e.cols.y, e.cols.w, e.cols.h)
     end
 end
+----------------------------------------------------
+-- ControllerSystem
+----------------------------------------------------
+ControllerSystem = tiny.processingSystem()
+ControllerSystem.filter = tiny.requireAll("move")
+
+function ControllerSystem:process(e, dt)
+    if e.cols.type == nil then
+        return
+    end
+
+    if love.keyboard.isDown('w') then
+        e.move.speed.y = -60
+    elseif love.keyboard.isDown('s') then
+        e.move.speed.y = 60
+    else
+        e.move.speed.y = 0
+    end
+
+    if love.keyboard.isDown('a') then
+        e.move.speed.x = -60
+    elseif love.keyboard.isDown('d') then
+        e.move.speed.x = 60
+    else
+        e.move.speed.x = 0
+    end
+end

@@ -34,15 +34,15 @@ local hero = {
 		filename = '',
 	},
 	animate = {
-		filename = 'res/%d.png',--可以通过%d匹配
-		frameSize = 3,--几个帧
-		duration = 0.3,--可以是纯数字哦
+		filename = 'res/hero/Run__00%d.png',--可以通过%d匹配
+		frameSize = 9,--几个帧
+		duration = 0.1,--可以是纯数字哦
 	}
 }
 
 local heroB = {
 	cols = {
-		type = {"hero", "hero"},
+		type = nil,
 		mask = {"hero", "hero"},
 		w = 100,
 		h = 100,
@@ -65,7 +65,7 @@ local heroB = {
 	}
 }
 
-world = tiny.world(CollisionSystem, MoveSystem, RenderSystem, hero, heroB)
+world = tiny.world(CollisionSystem, MoveSystem, RenderSystem, ControllerSystem, hero, heroB)
 -- tiny.setSystemIndex (world, system, index)
 
 function love.load()
