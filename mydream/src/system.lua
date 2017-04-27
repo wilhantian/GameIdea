@@ -39,20 +39,9 @@ function RenderSystem:process(e, dt)
     local animate = e.animate
 
     if animate then
-        if not animate.anim then
-            local frames = {}
-            for i=1, animate.frameSize do
-                frames[i] = love.graphics.newImage(string.format(animate.filename, i))
-            end
-            animate.anim = animator.newAnimation(frames, animate.duration)
-            animate.anim:setLooping()
-        end
         animate.anim:update(dt)
         animate.anim:draw(e.pos.x, e.pos.y)
     else
-        if not image.drawable then
-            image.drawable = love.graphics.newImage(image.filename)
-        end
         love.graphics.draw(image.drawable, e.pos.x, e.pos.y)
     end
 
@@ -67,6 +56,22 @@ function RenderSystem:process(e, dt)
         RenderSystem.memGraph:draw()
     end
 end
+
+function RenderSystem:onAdd(e)
+    local image = e.image
+    local animate = e.animate
+    
+    if animate then
+        local frames = {}
+        for i=1, animate.frameSize do
+            frames[i] = love.graphics.newImage(string.format(animate.filename, i))
+        end
+        animate.anim = animator.newAnimation(frames, animate.duration)
+        animate.anim:setLooping()
+    else
+        image.drawable = love.graphics.newImage(image.filename)
+    end
+end
 ----------------------------------------------------
 -- CollisionSystem
 ----------------------------------------------------
@@ -74,10 +79,11 @@ CollisionSystem = tiny.processingSystem()
 CollisionSystem.filter = tiny.requireAll("cols", "pos")
 
 function CollisionSystem:process(e, dt)
-    if not e.cols.isInit then --如碰撞组件未初始化
-        e.cols.isInit = true
-        aabb:add(e, e.pos.x + e.cols.x, e.pos.y + e.cols.y, e.cols.w, e.cols.h)
-    end
+    --TODO
+end
+
+function CollisionSystem:onAdd(e)
+    aabb:add(e, e.pos.x + e.cols.x, e.pos.y + e.cols.y, e.cols.w, e.cols.h)
 end
 ----------------------------------------------------
 -- ControllerSystem
