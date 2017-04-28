@@ -19,10 +19,12 @@ function MoveSystem:process(e, dt)
         if len > 0 then
             -- TODO
             -- print("发生了碰撞")
-        end
-
-        if DEBUG_AABB then
-            drawRect("line", e.pos.x + e.cols.x, e.pos.y + e.cols.y, e.cols.w, e.cols.h, {r = 0, g = 255, b = 0, a = 120})
+            CollisionSystem._curColsX = x
+            CollisionSystem._curColsY = y
+            CollisionSystem._curColsE = e
+            CollisionSystem._curColsOthers = cols
+            CollisionSystem._curColsLen = len
+            
         end
     end
 end
@@ -30,19 +32,28 @@ end
 -- RenderSystem
 ----------------------------------------------------
 RenderSystem = tiny.processingSystem()
-RenderSystem.filter = tiny.requireAll("pos", tiny.requireAny("image", "animate"))
+RenderSystem.filter = tiny.requireAll("pos", tiny.requireAny("sprite", "cols"))
 RenderSystem.fpsGraph = nil
 RenderSystem.memGraph = nil
 
 function RenderSystem:process(e, dt)
-    local image = e.image
-    local animate = e.animate
+    local pos = e.pos
+    local anim = e.anim
+    local sprite = e.sprite
 
-    if animate then
-        animate.anim:update(dt)
-        animate.anim:draw(e.pos.x, e.pos.y)
-    else
-        love.graphics.draw(image.drawable, e.pos.x, e.pos.y)
+    local x, y = pos.x, pos.y
+
+    if anim then
+        anim:update(dt)
+        anim:draw(sprite, x, y)
+    elseif sprite then
+        love.graphics.draw(sprite, x, y)
+    end
+
+    if DEBUG_AABB then
+        if e.cols then
+            drawRect("line", e.pos.x + e.cols.x, e.pos.y + e.cols.y, e.cols.w, e.cols.h, {r = 0, g = 255, b = 0, a = 120})
+        end
     end
 
     if DEBUG_FPS then
@@ -58,19 +69,6 @@ function RenderSystem:process(e, dt)
 end
 
 function RenderSystem:onAdd(e)
-    local image = e.image
-    local animate = e.animate
-    
-    if animate then
-        local frames = {}
-        for i=1, animate.frameSize do
-            frames[i] = love.graphics.newImage(string.format(animate.filename, i))
-        end
-        animate.anim = animator.newAnimation(frames, animate.duration)
-        animate.anim:setLooping()
-    else
-        image.drawable = love.graphics.newImage(image.filename)
-    end
 end
 ----------------------------------------------------
 -- CollisionSystem

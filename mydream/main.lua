@@ -3,7 +3,7 @@ tiny = require "libs.tiny"
 bump = require "libs.bump"
 tween = require "libs.tween"
 debugGraph = require "libs.debugGraph"
-animator = require "libs.animator"
+anim8 = require 'libs.anim8'
 
 require "src.system"
 require "src.utils"
@@ -30,14 +30,8 @@ local hero = {
 		x = 100, 
 		y = 100 
 	},
-	image = {
-		filename = '',
-	},
-	animate = {
-		filename = 'res/hero/Run__00%d.png',--可以通过%d匹配
-		frameSize = 9,--几个帧
-		duration = 0.1,--可以是纯数字哦
-	}
+	sprite = love.graphics.newImage("res/1.png"),
+	-- anim = anim8.newAnim
 }
 
 local heroB = {
@@ -59,9 +53,6 @@ local heroB = {
 	pos = {
 		x = 200, 
 		y = 200 
-	},
-	image = {
-		filename = 'res/2.png'
 	}
 }
 
