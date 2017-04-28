@@ -1,12 +1,20 @@
 local DEBUG_AABB = true
 local DEBUG_FPS = true
 ----------------------------------------------------
--- FLASH
 -- flash = {
 --     isShow = boolean,
 --     time = number,
 --     curShowTime = number,
 --     lastShowTime = number
+-- }
+----------------------------------------------------
+-- melee = {
+--     x = number,
+--     y = number,
+--     w = number,
+--     h = number,
+--     key = string or number,
+--     cd = number
 -- }
 ----------------------------------------------------
 
@@ -134,9 +142,33 @@ function ControllerSystem:process(e, dt)
     end
 end
 ----------------------------------------------------
+-- MeleeSystem
+----------------------------------------------------
+MeleeSystem = tiny.processingSystem()
+MeleeSystem.filter = tiny.requireAll("melee", "pos")
+
+function MeleeSystem:process(e, dt)
+    local pos = e.pos
+    local melee = e.melee
+
+    melee._cd = (melee._cd or 0) + dt
+    if not love.keyboard.isDown(melee.key) then return end
+    if melee.cd > melee._cd then return end
+    melee._cd = 0
+
+    local x, y, w, h = melee.x, melee.y, melee.w, melee.h
+    x = x + pos.x -- TODO
+    y = y + pos.y -- TODO
+
+    local items, len = aabb:queryRect(x, y, w, h, nil)
+    -- TODO
+    print('与' .. len .. '个物体发生碰撞')
+end
+----------------------------------------------------
 -- Collision Handler
 ----------------------------------------------------
 function onCollsionHandler(cols, len)
+    -- TODO
     for i=1, len do
         printt(cols[i])
         addFlash(cols[i].other, 0.4)

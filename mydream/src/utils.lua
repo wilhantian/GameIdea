@@ -47,6 +47,11 @@ function addFlash(e, time)
         print('fuck! the entity is null!')
         return
     end
+    
+    if e['flash'] then
+        print('you have a flash component')
+    end
+
     e['flash'] = {
         isShow = true,
         curShowTime = 0,

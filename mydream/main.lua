@@ -40,6 +40,14 @@ local hero = {
         x = 10,
         y = -60
     },
+    melee = {
+        key = 'j',
+        cd = 1, -- CD冷却1秒
+        x = 0,
+        y = 0,
+        w = 40,
+        h = 40
+    },
 	sprite = love.graphics.newImage("res/hero.png"), -- 精灵组件 也就是图片
 	anim = heroAnim -- 动画配置
 }
@@ -65,7 +73,7 @@ local heroB = {
     sprite = love.graphics.newImage("res/hero/Run__001.png")
 }
 
-world = tiny.world(MoveSystem, CollisionSystem, RenderSystem, ControllerSystem, hero, heroB)
+world = tiny.world(MoveSystem, CollisionSystem, MeleeSystem, RenderSystem, ControllerSystem, hero, heroB)
 -- tiny.setSystemIndex (world, system, index)
 
 function love.load()
