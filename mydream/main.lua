@@ -41,13 +41,16 @@ local hero = {
         x = 10,
         y = -60
     },
+    direction = { -- 方向组件
+        dir = "right"
+    },
     melee = { -- 近战组件
         key = 'j',
         cd = 1, -- CD冷却1秒
         x = 0,
-        y = 0,
-        w = 40,
-        h = 40
+        y = -10,
+        w = 30,
+        h = 60
     },
 	health = { -- 生命组件
 		hp = 3,
@@ -83,7 +86,11 @@ local heroB = {
 		y = 200 
 	},
     sprite = love.graphics.newImage("res/hero/Run__001.png"),
-	bgLayer = true
+	bgLayer = true,
+    health = {
+        hp = 2,
+        maxHp = 2
+    }
 }
 
 local colsSys = CollisionSystem()
@@ -92,6 +99,7 @@ world = tiny.world(
 	MoveSystem(colsSys),
 	CollisionSystem(),
 	MeleeSystem(colsSys),
+    HealthSystem(),
 	CameraSystem(),
 	RenderSystem("bgLayer"),
 	RenderSystem("coreLayer"),

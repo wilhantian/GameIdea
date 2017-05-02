@@ -25,6 +25,12 @@
 --     right = 'd'
 -- }
 ----------------------------------------------------
+-- 方向组件
+-- direction = {
+--     lastDir = '',
+--     dir = ''
+-- }
+----------------------------------------------------
 
 ----------------------------------------------------
 -- 移动系统
@@ -64,6 +70,7 @@ function RenderSystem:process(e, dt)
     local anim = e.anim
     local sprite = e.sprite
     local offset = e.offset or {}
+    -- local direction = e.direction -- TODO
 
     if e.flash then -- 闪烁组件
         e.flash.curShowTime = e.flash.curShowTime + dt
@@ -120,11 +127,24 @@ function CollisionSystem:onMoveCollision(e, cols, len)
 end
 
 function CollisionSystem:onMeleeCollision(e, cols, len)
-    print("近战碰撞, 打击" .. len .. "个实体")
+    for i=1, len do
+        if cols[i] ~= e then
+            print('发生武器碰撞')
+            if cols[i].health then
+                print('-hp')
+                cols[i].health.hp = cols[i].health.hp - 1
+            end
+        end
+    end
 end
 
 function CollisionSystem:onAdd(e)
     aabb:add(e, e.pos.x, e.pos.y, e.cols.w, e.cols.h)
+end
+
+function CollisionSystem:onRemove(e)
+    aabb:remove(e)
+    printt(e)
 end
 ----------------------------------------------------
 -- 控制系统
@@ -137,21 +157,38 @@ end
 
 function ControllerSystem:process(e, dt)
     local ctrl = e.controlable
+    local move = e.move
+    local direction = e.direction
+    local anim = e.anim
 
     if love.keyboard.isDown(ctrl.up) then
-        e.move.speed.y = -76
+        move.speed.y = -76
+        if direction.dir ~= "up" then
+            direction.dir = "up"
+        end
     elseif love.keyboard.isDown(ctrl.down) then
-        e.move.speed.y = 76
+        move.speed.y = 76
+        if direction.dir ~= "down" then
+            direction.dir = "down"
+        end
     else
-        e.move.speed.y = 0
+        move.speed.y = 0
     end
 
     if love.keyboard.isDown(ctrl.left) then
-        e.move.speed.x = -76
+        move.speed.x = -76
+        if direction.dir ~= "left" then
+            direction.dir = "left"
+            anim:flipH()
+        end
     elseif love.keyboard.isDown(ctrl.right) then
-        e.move.speed.x = 76
+        move.speed.x = 76
+        if direction.dir ~= "right" then
+            direction.dir = "right"
+            anim:flipH()
+        end
     else
-        e.move.speed.x = 0
+        move.speed.x = 0
     end
 end
 ----------------------------------------------------
@@ -160,13 +197,14 @@ end
 MeleeSystem = tiny.processingSystem(class "MeleeSystem")
 
 function MeleeSystem:init(colsSys)
-    self.filter = tiny.requireAll("melee", "pos")
+    self.filter = tiny.requireAll("melee", "pos", "direction")
     self.colsSys = colsSys
 end
 
 function MeleeSystem:process(e, dt)
     local pos = e.pos
     local melee = e.melee
+    local direction = e.direction
 
     melee._cd = (melee._cd or 0) + dt
     if not love.keyboard.isDown(melee.key) then return end
@@ -174,7 +212,11 @@ function MeleeSystem:process(e, dt)
     melee._cd = 0
 
     local x, y, w, h = pos.x + melee.x, pos.y + melee.y, melee.w, melee.h
-    local items, len = aabb:queryRect(x, y, w, h, nil)
+    local cols, len = aabb:queryRect(x, y, w, h, nil)
+
+    if direction.dir == "right" then
+        x = 2*pos.x + melee.x
+    end
 
     if len > 0 then
         self.colsSys:onMeleeCollision(e, cols, len)
@@ -204,7 +246,10 @@ end
 function HealthSystem:process(e, dt)
     local health = e.health
 
-    if health.hp <= 0 then
-        -- 死亡
+    if health.hp <= 0 and not health.isDied then
+        health.isDied = true
+        -- TODO 死亡
+        world:removeEntity(e)
+        print('实体死亡')
     end
 end
