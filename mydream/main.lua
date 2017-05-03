@@ -18,8 +18,22 @@ events = Events:new()
 ------------------------------------
 -- TEST
 ------------------------------------
-local hg = anim8.newGrid(80, 100, 640, 740, 0, 0, 0, 0)
-local heroAnim = anim8.newAnimation(hg('1-6', 3), 0.14)
+local hg = anim8.newGrid(80, 100, 640, 470, 0, 0, 0, 0)
+
+local animRunLeft = anim8.newAnimation(hg('1-6', 3), 0.14)
+local animRunRight = anim8.newAnimation(hg('1-6', 3), 0.14)
+local animRunUp = anim8.newAnimation(hg('1-6', 2), 0.14)
+local animRunDown = anim8.newAnimation(hg('1-6', 2), 0.14)
+
+local animStandLeft = anim8.newAnimation(hg('1-8', 1), 0.14)
+local animStandRight = anim8.newAnimation(hg('1-8', 1), 0.14)
+local animStandUp = anim8.newAnimation(hg('1-8', 1), 0.14)
+local animStandDown = anim8.newAnimation(hg('1-8', 1), 0.14)
+
+animRunLeft:flipH()
+animRunDown:flipH()
+animStandLeft:flipH()
+animStandDown:flipH()
 
 local hero = {
 	cols = { -- 碰撞组件
@@ -44,7 +58,7 @@ local hero = {
         y = -60
     },
     dir = { -- 方向组件
-        curDir = "right"
+        curDir = DirType.Left
     },
     melee = { -- 近战组件
         key = 'j',
@@ -59,7 +73,19 @@ local hero = {
 		maxHp = 3
 	},
 	sprite = love.graphics.newImage("res/hero.png"), -- 精灵组件 也就是图片
-	anim = heroAnim, -- 动画配置
+	anim = { -- 动画配置
+        curAnim = nil,
+
+        runLeft = animRunLeft,
+        runRight = animRunRight,
+        runUp = animRunUp,
+        runDown = animRunDown,
+        standLeft = animStandLeft,
+        standRight = animStandRight,
+        standUp = animStandUp,
+        standDown = animStandDown,
+        -- todo
+    },
 	controlable = { -- 控制组件
 		up = 'w',
 		down = 's',
@@ -68,8 +94,7 @@ local hero = {
 	},
 	coreLayer = true, -- 渲染层级
 	state = {
-		-- lastState = "",
-		curState = StateType.None
+		curState = StateType.Stand
 	}
 }
 

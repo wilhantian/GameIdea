@@ -126,9 +126,11 @@ function RenderSystem:process(e, dt)
     local x, y = pos.x + (offset.x or 0), pos.y + (offset.y or 0)
 
     if anim then -- 动画组件
-        anim:update(dt)
         drawList:add(function()
-            anim:draw(sprite, x, y)
+            if anim.curAnim then
+                anim.curAnim:update(dt)
+                anim.curAnim:draw(sprite, x, y)
+            end
         end, y)
     elseif sprite then
         drawList:add(function()
@@ -149,10 +151,51 @@ function RenderSystem:process(e, dt)
     end
 end
 
+-- 实体状态发生改变
 function RenderSystem:onStateChanged(e)
+    self:onStateOrDirChanged(e)
 end
 
+-- 实体方向发生改变
 function RenderSystem:onDirChanged(e)
+    self:onStateOrDirChanged(e)
+end
+
+-- 实体的方向或状态发生改变
+function RenderSystem:onStateOrDirChanged(e)
+    local st = e.state
+    local dir = e.dir
+    local anim = e.anim
+
+    if st == nil or dir == nil or anim == nil then
+        return
+    end
+
+    if st.curState == StateType.Run then
+        if dir.curDir == DirType.Up then
+            anim.curAnim = anim.runUp
+        elseif dir.curDir == DirType.Down then
+            anim.curAnim = anim.runDown
+        elseif dir.curDir == DirType.Right or dir.curDir == DirType.RightUp or dir.curDir == DirType.RightDown then
+            anim.curAnim = anim.runRight
+        elseif dir.curDir == DirType.Left or dir.curDir == DirType.LeftUp or dir.curDir == DirType.LeftDown then
+            anim.curAnim = anim.runLeft
+        end
+    elseif st.curState == StateType.Stand then
+        if dir.curDir == DirType.Up then
+            anim.curAnim = anim.standUp
+        elseif dir.curDir == DirType.Down then
+            anim.curAnim = anim.standDown
+        elseif dir.curDir == DirType.Right or dir.curDir == DirType.RightUp or dir.curDir == DirType.RightDown then
+            anim.curAnim = anim.standRight
+        elseif dir.curDir == DirType.Left or dir.curDir == DirType.LeftUp or dir.curDir == DirType.LeftDown then
+            anim.curAnim = anim.standLeft
+        end
+    end
+end
+
+function RenderSystem:onAdd(e)
+    self:onStateOrDirChanged(e)
 end
 
 ----------------------------------------------------
@@ -284,15 +327,11 @@ HealthSystem = tiny.processingSystem(class "HealthSystem")
 function HealthSystem:init()
     self.filter = tiny.requireAll("health")
 
-    events:on("moveCollision", function(e, cols, len)
-        -- TODO
-        print("moveCollision")
-    end)
+    -- 移动碰撞
+    events:on("moveCollision", bind(self.onMoveCollision, self))
 
-    events:on("meleeCollision", function(e, cols, len)
-        -- TODO
-        print("meleeCollision")
-    end)
+    -- 近战碰撞
+    events:on("meleeCollision", bind(self.onMeleeCollision, self))
 end
 
 function HealthSystem:process(e, dt)
@@ -304,4 +343,27 @@ function HealthSystem:process(e, dt)
         world:removeEntity(e)
         print('实体死亡')
     end
+end
+
+function HealthSystem:onMoveCollision(e, others, len)
+    local cols = e.cols
+    local health = e.health
+
+    for i=1, len do
+        local other = others[i].other
+        
+        if e == other then return end
+
+        if cols.type == ColsType.Hero and other.cols.type == ColsType.Monster then
+            local curTime = love.timer.getTime()
+            if health and curTime - (health.lastHitTime or 0) > 0.5 then
+                health.hp = health.hp - 1
+                health.lastHitTime = curTime
+                events:emit("healthChanged", e)
+            end
+        end
+    end
+end
+
+function HealthSystem:onMeleeCollision(e, cols, len)
 end
