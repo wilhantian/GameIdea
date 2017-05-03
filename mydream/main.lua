@@ -5,6 +5,7 @@ tween = require "libs.tween"
 debugGraph = require "libs.debugGraph"
 anim8 = require "libs.anim8"
 Camera = require "libs.camera"
+Events = require "libs.events"
 
 require "src.define"
 require "src.system"
@@ -12,6 +13,7 @@ require "src.utils"
 
 aabb = bump.newWorld(64)
 drawList = SortFunc()
+events = Events:new()
 
 ------------------------------------
 -- TEST
