@@ -23,7 +23,7 @@ local heroAnim = anim8.newAnimation(hg('1-6', 3), 0.14)
 
 local hero = {
 	cols = { -- 碰撞组件
-		type = COLS_TYPE.Hero,
+		type = ColsType.Hero,
 		mask = {"hero", "hero"},
 		w = 90,
 		h = 40
@@ -31,8 +31,8 @@ local hero = {
 	move = { -- 移动组件
 		mask = function()end,
 		speed = {
-			x = 20,
-			y = 20
+			x = 0,
+			y = 0
 		}
 	},
 	pos = { -- 坐标组件
@@ -43,8 +43,8 @@ local hero = {
         x = 10,
         y = -60
     },
-    direction = { -- 方向组件
-        dir = "right"
+    dir = { -- 方向组件
+        curDir = "right"
     },
     melee = { -- 近战组件
         key = 'j',
@@ -66,12 +66,16 @@ local hero = {
 		left = 'a',
 		right = 'd'
 	},
-	coreLayer = true -- 渲染层级
+	coreLayer = true, -- 渲染层级
+	state = {
+		-- lastState = "",
+		curState = StateType.None
+	}
 }
 
 local heroB = {
 	cols = {
-		type = COLS_TYPE.Monster,
+		type = ColsType.Monster,
 		mask = {"hero", "hero"},
 		w = 100,
 		h = 100

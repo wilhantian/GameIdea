@@ -26,7 +26,7 @@
 -- }
 ----------------------------------------------------
 -- 方向组件
--- direction = {
+-- dir = {
 --     lastDir = '',
 --     dir = ''
 -- }
@@ -40,6 +40,9 @@ MoveSystem = tiny.processingSystem(class "MoveSystem")
 function MoveSystem:init(colsSys)
     self.filter = tiny.requireAll("move", "pos")
     self.colsSys = colsSys
+
+    events:on("stateChanged", bind(self.onStateChanged, self))
+    events:on("dirChanged", bind(self.onDirChanged, self))
 end
 
 function MoveSystem:process(e, dt)
@@ -52,8 +55,42 @@ function MoveSystem:process(e, dt)
         e.pos.y = y
 
         if len > 0 then
-            self.colsSys:onMoveCollision(e, cols, len)
+            events:emit("moveCollision", e, cols, len)
         end
+    end
+end
+
+function MoveSystem:onStateChanged(e)
+    local move = e.move
+    if move then
+        move.speed.x, move.speed.y = self:_getSpeed(e)
+    end
+end
+
+function MoveSystem:onDirChanged(e)
+    local move = e.move
+    if move then
+        move.speed.x, move.speed.y = self:_getSpeed(e)
+    end
+end
+
+function MoveSystem:_getSpeed(e)
+    local st = e.state.curState
+    local dir = e.dir.curDir
+    
+    if st == StateType.Stand then
+        return 0, 0
+    end
+    
+    if st == StateType.Run then
+        if dir == DirType.Up then return 0, -60 elseif
+        dir == DirType.Down then return 0, 60 elseif
+        dir == DirType.Left then return -60, 0 elseif
+        dir == DirType.Right then return 60, 0 elseif
+        dir == DirType.LeftUp then return -40, -40 elseif
+        dir == DirType.LeftDown then return -40, 40 elseif
+        dir == DirType.RightUp then return 40, -40 elseif
+        dir == DirType.RightDown then return 40, 40 end
     end
 end
 ----------------------------------------------------
@@ -63,6 +100,9 @@ RenderSystem = tiny.processingSystem(class "RenderSystem")
 
 function RenderSystem:init(layer)
     self.filter = tiny.requireAll("pos", layer, tiny.requireAny("sprite", "cols"))
+
+    events:on("stateChanged", bind(self.onStateChanged, self))
+    events:on("dirChanged", bind(self.onDirChanged, self))
 end
 
 function RenderSystem:process(e, dt)
@@ -70,7 +110,6 @@ function RenderSystem:process(e, dt)
     local anim = e.anim
     local sprite = e.sprite
     local offset = e.offset or {}
-    -- local direction = e.direction -- TODO
 
     if e.flash then -- 闪烁组件
         e.flash.curShowTime = e.flash.curShowTime + dt
@@ -110,6 +149,12 @@ function RenderSystem:process(e, dt)
     end
 end
 
+function RenderSystem:onStateChanged(e)
+end
+
+function RenderSystem:onDirChanged(e)
+end
+
 ----------------------------------------------------
 -- 碰撞系统
 ----------------------------------------------------
@@ -119,32 +164,12 @@ function CollisionSystem:init()
     self.filter = tiny.requireAll("pos", "cols")
 end
 
-function CollisionSystem:onMoveCollision(e, cols, len)
-    for i=1, len do
-        printt(cols[i])
-        addFlash(cols[i].other, 0.4)
-    end
-end
-
-function CollisionSystem:onMeleeCollision(e, cols, len)
-    for i=1, len do
-        if cols[i] ~= e then
-            print('发生武器碰撞')
-            if cols[i].health then
-                print('-hp')
-                cols[i].health.hp = cols[i].health.hp - 1
-            end
-        end
-    end
-end
-
 function CollisionSystem:onAdd(e)
     aabb:add(e, e.pos.x, e.pos.y, e.cols.w, e.cols.h)
 end
 
 function CollisionSystem:onRemove(e)
     aabb:remove(e)
-    printt(e)
 end
 ----------------------------------------------------
 -- 控制系统
@@ -156,55 +181,71 @@ function ControllerSystem:init()
 end
 
 function ControllerSystem:process(e, dt)
-    local ctrl = e.controlable
-    local move = e.move
-    local direction = e.direction
-    local anim = e.anim
+    local ctrl = e.controlable or {}
 
-    if love.keyboard.isDown(ctrl.up) then
-        move.speed.y = -76
-        if direction.dir ~= "up" then
-            direction.dir = "up"
-        end
-    elseif love.keyboard.isDown(ctrl.down) then
-        move.speed.y = 76
-        if direction.dir ~= "down" then
-            direction.dir = "down"
-        end
+    local l = love.keyboard.isDown(ctrl.left)
+    local r = love.keyboard.isDown(ctrl.right)
+    local u = love.keyboard.isDown(ctrl.up)
+    local d = love.keyboard.isDown(ctrl.down)
+
+    local dir = nil
+
+    if u then dir = DirType.Up end
+    if d then dir = DirType.Down end
+    if l then dir = DirType.Left end
+    if r then dir = DirType.Right end
+    if r and u then dir = DirType.RightUp end
+    if l and u then dir = DirType.LeftUp end
+    if r and d then dir = DirType.RightDown end
+    if l and d then dir = DirType.LeftDown end
+
+    if l or r or u or d then
+        self:setState(e, StateType.Run)
     else
-        move.speed.y = 0
+        self:setState(e, StateType.Stand)
     end
 
-    if love.keyboard.isDown(ctrl.left) then
-        move.speed.x = -76
-        if direction.dir ~= "left" then
-            direction.dir = "left"
-            anim:flipH()
-        end
-    elseif love.keyboard.isDown(ctrl.right) then
-        move.speed.x = 76
-        if direction.dir ~= "right" then
-            direction.dir = "right"
-            anim:flipH()
-        end
-    else
-        move.speed.x = 0
+    if dir then
+        self:setDir(e, dir)
     end
 end
+
+-- 切换组件状态
+function ControllerSystem:setState(e, state)
+    if e.state == nil or e.state.curState == state then 
+        return
+    end
+    
+    e.state.lastState = e.state.curState
+    e.state.curState = state
+    events:emit("stateChanged", e)
+end
+
+-- 切换组件方向
+function ControllerSystem:setDir(e, dir)
+    if e.dir == nil or e.dir.curDir == dir then 
+        return
+    end
+    
+    e.dir.lastDir = e.dir.curDir
+    e.dir.curDir = dir
+    events:emit("dirChanged", e)
+end
+
 ----------------------------------------------------
 -- 近战系统
 ----------------------------------------------------
 MeleeSystem = tiny.processingSystem(class "MeleeSystem")
 
 function MeleeSystem:init(colsSys)
-    self.filter = tiny.requireAll("melee", "pos", "direction")
+    self.filter = tiny.requireAll("melee", "pos", "dir")
     self.colsSys = colsSys
 end
 
 function MeleeSystem:process(e, dt)
     local pos = e.pos
     local melee = e.melee
-    local direction = e.direction
+    local dir = e.dir
 
     melee._cd = (melee._cd or 0) + dt
     if not love.keyboard.isDown(melee.key) then return end
@@ -214,12 +255,12 @@ function MeleeSystem:process(e, dt)
     local x, y, w, h = pos.x + melee.x, pos.y + melee.y, melee.w, melee.h
     local cols, len = aabb:queryRect(x, y, w, h, nil)
 
-    if direction.dir == "right" then
+    if dir.curDir == "right" then
         x = 2*pos.x + melee.x
     end
 
     if len > 0 then
-        self.colsSys:onMeleeCollision(e, cols, len)
+        events:emit("meleeCollision", e, cols, len)
     end
 end
 ----------------------------------------------------
@@ -239,8 +280,19 @@ end
 -- 生命系统
 ----------------------------------------------------
 HealthSystem = tiny.processingSystem(class "HealthSystem")
+
 function HealthSystem:init()
     self.filter = tiny.requireAll("health")
+
+    events:on("moveCollision", function(e, cols, len)
+        -- TODO
+        print("moveCollision")
+    end)
+
+    events:on("meleeCollision", function(e, cols, len)
+        -- TODO
+        print("meleeCollision")
+    end)
 end
 
 function HealthSystem:process(e, dt)

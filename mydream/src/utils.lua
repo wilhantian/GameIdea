@@ -101,3 +101,12 @@ function SortFunc:call()
     self.list[i].func()
   end
 end
+
+-------------------------------------------------------
+-- 类似js中bind函数
+-------------------------------------------------------
+function bind(func, targer)
+  return function(...)
+    func(targer, ...)
+  end
+end
