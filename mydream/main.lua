@@ -18,17 +18,17 @@ events = Events:new()
 ------------------------------------
 -- TEST
 ------------------------------------
-local hg = anim8.newGrid(80, 100, 640, 470, 0, 0, 0, 0)
+local hg = anim8.newGrid(28, 48, 84, 48, 0, 0, 0, 0)
 
-local animRunLeft = anim8.newAnimation(hg('1-6', 3), 0.14)
-local animRunRight = anim8.newAnimation(hg('1-6', 3), 0.14)
-local animRunUp = anim8.newAnimation(hg('1-6', 2), 0.14)
-local animRunDown = anim8.newAnimation(hg('1-6', 2), 0.14)
+local animRunLeft = anim8.newAnimation(hg('1-3', 1), 0.26)
+local animRunRight = anim8.newAnimation(hg('1-3', 1), 0.26)
+local animRunUp = anim8.newAnimation(hg('1-3', 1), 0.26)
+local animRunDown = anim8.newAnimation(hg('1-3', 1), 0.26)
 
-local animStandLeft = anim8.newAnimation(hg('1-8', 1), 0.14)
-local animStandRight = anim8.newAnimation(hg('1-8', 1), 0.14)
-local animStandUp = anim8.newAnimation(hg('1-8', 1), 0.14)
-local animStandDown = anim8.newAnimation(hg('1-8', 1), 0.14)
+local animStandLeft = anim8.newAnimation(hg('1-3', 1), 0.26)
+local animStandRight = anim8.newAnimation(hg('1-3', 1), 0.26)
+local animStandUp = anim8.newAnimation(hg('1-3', 1), 0.26)
+local animStandDown = anim8.newAnimation(hg('1-3', 1), 0.26)
 
 animRunLeft:flipH()
 animRunDown:flipH()
@@ -72,7 +72,7 @@ local hero = {
 		hp = 3,
 		maxHp = 3
 	},
-	sprite = love.graphics.newImage("res/hero.png"), -- 精灵组件 也就是图片
+	sprite = love.graphics.newImage("res/lipo.png"), -- 精灵组件 也就是图片
 	anim = { -- 动画配置
         curAnim = nil,
 
