@@ -11,10 +11,14 @@ function view:getScaleFactor()
     end
     local fw = self.windowSize.width / DESIGN_WIDTH
     local fh = self.windowSize.height / DESIGN_HEIGHT
-    if fw > fh then
+    if fw < fh then
         return fh
     end
     return fw
+end
+
+function view:getLogicSize()
+    return DESIGN_WIDTH, DESIGN_HEIGHT
 end
 
 return view

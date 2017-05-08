@@ -18,7 +18,9 @@ StateType = {
     None = 0,
     Run = 1,
     Stand = 2,
-    Died = 3
+    Died = 3,
+
+    HitFly = 4, -- 击飞
 }
 
 -- 方向类型

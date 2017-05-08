@@ -58,6 +58,10 @@ local hero = {
         x = 10,
         y = -60
     },
+	scale = {
+		x = 5,
+		y = 2
+	},
     dir = { -- 方向组件
         curDir = DirType.Left
     },
@@ -75,8 +79,7 @@ local hero = {
 	},
 	sprite = newImage("res/lipo.png"), -- 精灵组件 也就是图片
 	anim = { -- 动画配置
-        curAnim = nil,
-
+        -- curAnim = nil,
         runLeft = animRunLeft,
         runRight = animRunRight,
         runUp = animRunUp,
@@ -94,9 +97,14 @@ local hero = {
 		right = 'd'
 	},
 	coreLayer = true, -- 渲染层级
-	state = {
+	state = { -- 状态
 		curState = StateType.Stand
-	}
+	},
+	-- effectHitFly = { -- 击飞特效
+	-- 	duration = 1.1,
+	-- 	x = -100,
+	-- 	y = 10
+	-- }
 }
 
 local heroB = {

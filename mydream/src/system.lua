@@ -46,8 +46,14 @@ function MoveSystem:init(colsSys)
 end
 
 function MoveSystem:process(e, dt)
-    e.pos.x = e.pos.x + dt * e.move.speed.x
-    e.pos.y = e.pos.y + dt * e.move.speed.y
+    local ehxPos = self:effectHitFly(e, dt)
+    if ehxPos then
+        e.pos.x = ehxPos.x
+        e.pos.y = ehxPos.y
+    else
+        e.pos.x = e.pos.x + dt * e.move.speed.x
+        e.pos.y = e.pos.y + dt * e.move.speed.y
+    end
 
     if e.cols then --如实体含有碰撞组件
         local x, y, cols, len = aabb:move(e, e.pos.x, e.pos.y, e.mask)
@@ -78,10 +84,6 @@ function MoveSystem:_getSpeed(e)
     local st = e.state.curState
     local dir = e.dir.curDir
     
-    if st == StateType.Stand then
-        return 0, 0
-    end
-    
     if st == StateType.Run then
         if dir == DirType.Up then return 0, -60 elseif
         dir == DirType.Down then return 0, 60 elseif
@@ -92,6 +94,34 @@ function MoveSystem:_getSpeed(e)
         dir == DirType.RightUp then return 40, -40 elseif
         dir == DirType.RightDown then return 40, 40 end
     end
+
+    return 0, 0
+end
+
+-- 获取击飞特效位移点
+function MoveSystem:effectHitFly(e, dt)
+    local ehf = e.effectHitFly
+    
+    if ehf == nil then return nil end
+
+    local pos = e.pos
+    local duration = ehf.duration
+    local ox, oy = ehf.x, ehf.y
+
+    if duration < (ehf._clock or 0) then
+        e.effectHitFly = nil -- 移出击飞组件
+        return nil
+    end
+
+    if ehf._tween == nil then
+        ehf._startPos = {x = pos.x, y = pos.y}
+        ehf._cachePos = {x = pos.x, y = pos.y}
+        ehf._tween = tween.new(duration, ehf._cachePos, {x = e.pos.x + ox, y = e.pos.y + oy}, 'linear')
+    end
+
+    ehf._clock = (ehf._clock or 0) + dt
+    ehf._tween:update(dt)
+    return {x = ehf._cachePos.x, y = ehf._cachePos.y}
 end
 ----------------------------------------------------
 -- 渲染系统
@@ -106,10 +136,13 @@ function RenderSystem:init(layer)
 end
 
 function RenderSystem:process(e, dt)
-    local pos = e.pos
+    local x, y = e.pos.x, e.pos.y
     local anim = e.anim
     local sprite = e.sprite
     local offset = e.offset or {}
+    local rotate = e.rotate or 0
+    local scaleX, scaleY = e.scale and e.scale.x or 1, e.scale and e.scale.y or 1
+    local offsetX, offsetY = e.offset and e.offset.x or 0, e.offset and e.offset.y or 0
 
     if e.flash then -- 闪烁组件
         e.flash.curShowTime = e.flash.curShowTime + dt
@@ -123,30 +156,28 @@ function RenderSystem:process(e, dt)
         end
     end
 
-    local x, y = pos.x + (offset.x or 0), pos.y + (offset.y or 0)
-
     if anim then -- 动画组件
         drawList:add(function()
             if anim.curAnim then
                 anim.curAnim:update(dt)
-                anim.curAnim:draw(sprite, x, y)
+                anim.curAnim:draw(sprite, x, y, rotate, scaleX, scaleY, offsetX * -1, offsetY * -1)
             end
         end, y)
     elseif sprite then
         drawList:add(function()
-            love.graphics.draw(sprite, x, y)
+            love.graphics.draw(sprite, x, y, rotate, scaleX, scaleY, offsetX * -1, offsetY * -1)
         end, y)
     end
 
     if DEBUG_AABB then -- 碰撞区域调试
         if e.cols then
-            drawRect("line", e.pos.x, e.pos.y, e.cols.w, e.cols.h, {r = 0, g = 255, b = 0, a = 120})
+            drawRect("line", x, y, e.cols.w, e.cols.h, {r = 0, g = 255, b = 0, a = 120})
         end
 
         if e.melee and e.melee._cd < e.melee.cd then -- 近战调试
             local melee = e.melee
-            local x, y, w, h = e.pos.x + melee.x, e.pos.y + melee.y, melee.w, melee.h
-            drawRect("fill", x, y, w, h, {r = 20, g = 20, b = 205, a = 255 - 255 * e.melee._cd / e.melee.cd})
+            local mx, my, w, h = x + melee.x, y + melee.y, melee.w, melee.h
+            drawRect("fill", mx, my, w, h, {r = 20, g = 20, b = 205, a = 255 - 255 * e.melee._cd / e.melee.cd})
         end
     end
 end
@@ -224,7 +255,12 @@ function ControllerSystem:init()
 end
 
 function ControllerSystem:process(e, dt)
-    local ctrl = e.controlable or {}
+    local ctrl = e.controlable
+
+    if e.effectHitFly then --含有击飞特效则不受控制
+        self:setState(e, StateType.HitFly)
+        return
+    end
 
     local l = love.keyboard.isDown(ctrl.left)
     local r = love.keyboard.isDown(ctrl.right)
@@ -353,6 +389,12 @@ function HealthSystem:onMoveCollision(e, others, len)
         local other = others[i].other
         
         if e == other then return end
+
+        e["effectHitFly"] = {
+            duration = 0.1,
+            x = -20,
+            y = -20
+        }
 
         if cols.type == ColsType.Hero and other.cols.type == ColsType.Monster then
             local curTime = love.timer.getTime()
