@@ -31,10 +31,10 @@ local animStandRight = anim8.newAnimation(hg('1-3', 1), 0.26)
 local animStandUp = anim8.newAnimation(hg('1-3', 1), 0.26)
 local animStandDown = anim8.newAnimation(hg('1-3', 1), 0.26)
 
-animRunLeft:flipH()
-animRunDown:flipH()
-animStandLeft:flipH()
-animStandDown:flipH()
+animRunRight:flipH()
+animRunUp:flipH()
+animStandRight:flipH()
+animStandUp:flipH()
 
 local hero = {
 	cols = { -- 碰撞组件
@@ -55,12 +55,12 @@ local hero = {
 		y = 200
 	},
     offset = { -- 偏移量(主要用于sprite的位置)
-        x = 10,
-        y = -60
+        x = 5,
+        y = -35
     },
 	scale = {
-		x = 5,
-		y = 2
+		x = 2.4,
+		y = 2.4
 	},
     dir = { -- 方向组件
         curDir = DirType.Left
@@ -68,10 +68,30 @@ local hero = {
     melee = { -- 近战组件
         key = 'j',
         cd = 1, -- CD冷却1秒
-        x = 0,
-        y = -10,
-        w = 30,
-        h = 60
+        left = {
+            x = 0,
+            y = -10,
+            w = 30,
+            h = 60
+        },
+        right = {
+            x = 90-30,
+            y = -10,
+            w = 30,
+            h = 60
+        },
+        up = {
+            x = 0,
+            y = -30,
+            w = 90,
+            h = 30
+        },
+        down = {
+            x = 0,
+            y = 40,
+            w = 90,
+            h = 30
+        }
     },
 	health = { -- 生命组件
 		hp = 3,
@@ -99,12 +119,7 @@ local hero = {
 	coreLayer = true, -- 渲染层级
 	state = { -- 状态
 		curState = StateType.Stand
-	},
-	-- effectHitFly = { -- 击飞特效
-	-- 	duration = 1.1,
-	-- 	x = -100,
-	-- 	y = 10
-	-- }
+	}
 }
 
 local heroB = {
@@ -136,6 +151,7 @@ local heroB = {
 local colsSys = CollisionSystem()
 
 world = tiny.world(
+    EffectSystem(),
 	MoveSystem(colsSys),
 	CollisionSystem(),
 	MeleeSystem(colsSys),

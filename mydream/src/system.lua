@@ -31,7 +31,12 @@
 --     dir = ''
 -- }
 ----------------------------------------------------
-
+-- 击飞特效
+-- effectHitFly = { -- 击飞特效
+-- 	duration = 1.1,
+-- 	x = -100,
+-- 	y = 10
+-- }
 ----------------------------------------------------
 -- 移动系统
 ----------------------------------------------------
@@ -174,9 +179,9 @@ function RenderSystem:process(e, dt)
             drawRect("line", x, y, e.cols.w, e.cols.h, {r = 0, g = 255, b = 0, a = 120})
         end
 
-        if e.melee and e.melee._cd < e.melee.cd then -- 近战调试
+        if e.melee and e.melee._cd < e.melee.cd and e.melee._debug then -- 近战调试
             local melee = e.melee
-            local mx, my, w, h = x + melee.x, y + melee.y, melee.w, melee.h
+            local mx, my, w, h = x + melee._debug.x, y + melee._debug.y, melee._debug.w, melee._debug.h
             drawRect("fill", mx, my, w, h, {r = 20, g = 20, b = 205, a = 255 - 255 * e.melee._cd / e.melee.cd})
         end
     end
@@ -331,12 +336,31 @@ function MeleeSystem:process(e, dt)
     if melee.cd > melee._cd then return end
     melee._cd = 0
 
-    local x, y, w, h = pos.x + melee.x, pos.y + melee.y, melee.w, melee.h
-    local cols, len = aabb:queryRect(x, y, w, h, nil)
-
-    if dir.curDir == "right" then
-        x = 2*pos.x + melee.x
+    local meleeData
+    if dir.curDir == DirType.Up then
+        meleeData = melee.up
+    elseif dir.curDir == DirType.RightUp then
+        meleeData = melee.rightUp or melee.right
+    elseif dir.curDir == DirType.Right then
+        meleeData = melee.right
+    elseif dir.curDir == DirType.RightDown then
+        meleeData = melee.rightDown or melee.right
+    elseif dir.curDir == DirType.Down then
+        meleeData = melee.down
+    elseif dir.curDir == DirType.LeftDown then
+        meleeData = melee.leftDown or melee.left
+    elseif dir.curDir == DirType.Left then
+        meleeData = melee.left
+    elseif dir.curDir == DirType.LeftUp then
+        meleeData = melee.leftUp or melee.left
+    else
+        print("近战未识别当前打击方向")
     end
+
+    local x, y, w, h = pos.x + meleeData.x, pos.y + meleeData.y, meleeData.w, meleeData.h
+    melee._debug = {x=meleeData.x, y=meleeData.y, w=w, h=h}
+
+    local cols, len = aabb:queryRect(x, y, w, h, nil)
 
     if len > 0 then
         events:emit("meleeCollision", e, cols, len)
@@ -365,7 +389,6 @@ function HealthSystem:init()
 
     -- 移动碰撞
     events:on("moveCollision", bind(self.onMoveCollision, self))
-
     -- 近战碰撞
     events:on("meleeCollision", bind(self.onMeleeCollision, self))
 end
@@ -390,12 +413,6 @@ function HealthSystem:onMoveCollision(e, others, len)
         
         if e == other then return end
 
-        e["effectHitFly"] = {
-            duration = 0.1,
-            x = -20,
-            y = -20
-        }
-
         if cols.type == ColsType.Hero and other.cols.type == ColsType.Monster then
             local curTime = love.timer.getTime()
             if health and curTime - (health.lastHitTime or 0) > 0.5 then
@@ -408,4 +425,37 @@ function HealthSystem:onMoveCollision(e, others, len)
 end
 
 function HealthSystem:onMeleeCollision(e, cols, len)
+end
+----------------------------------------------------
+-- 特效系统
+----------------------------------------------------
+EffectSystem = tiny.processingSystem(class "EffectSystem")
+
+function EffectSystem:init()
+    -- self.filter = tiny.requireAll(todo))
+
+    -- 移动碰撞
+    events:on("moveCollision", bind(self.onMoveCollision, self))
+    -- 近战碰撞
+    events:on("meleeCollision", bind(self.onMeleeCollision, self))
+end
+
+function EffectSystem:onMoveCollision(e, others, len)
+    for i=1, len do
+        local other = others[i].other
+        
+        if e == other then return end
+        
+        e["effectHitFly"] = {
+            duration = 0.1,
+            x = -20,
+            y = -20
+        }
+    end
+end
+
+function EffectSystem:onMeleeCollision(e, others, len)
+    for i=1, len do
+        -- TODO
+    end
 end
