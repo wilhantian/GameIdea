@@ -146,6 +146,7 @@ function love.load()
 		fpsGraph = debugGraph:new('fps', 0, 0)
 		memGraph = debugGraph:new('mem', 0, 30)
 	end
+	love.graphics.setDefaultFilter("nearest", "nearest")
 end
 
 function love.update(dt)
@@ -157,7 +158,7 @@ end
 
 function love.draw()
 	local dt = love.timer.getDelta()
-
+	
 	camera:draw(function()
 		world:update(dt)
 		drawList:sort()

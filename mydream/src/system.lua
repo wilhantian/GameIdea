@@ -129,7 +129,7 @@ function RenderSystem:process(e, dt)
         drawList:add(function()
             if anim.curAnim then
                 anim.curAnim:update(dt)
-                anim.curAnim:draw(sprite, x, y, 0, 6, 6)
+                anim.curAnim:draw(sprite, x, y)
             end
         end, y)
     elseif sprite then
