@@ -110,3 +110,9 @@ function bind(func, targer)
     func(targer, ...)
   end
 end
+
+function newImage(...)
+    local img = love.graphics.newImage(...)
+    img:setFilter("nearest")
+    return img
+end

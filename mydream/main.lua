@@ -10,6 +10,7 @@ Events = require "libs.events"
 require "src.define"
 require "src.system"
 require "src.utils"
+view = require "src.view"
 
 aabb = bump.newWorld(64)
 drawList = SortFunc()
@@ -72,7 +73,7 @@ local hero = {
 		hp = 3,
 		maxHp = 3
 	},
-	sprite = love.graphics.newImage("res/lipo.png"), -- 精灵组件 也就是图片
+	sprite = newImage("res/lipo.png"), -- 精灵组件 也就是图片
 	anim = { -- 动画配置
         curAnim = nil,
 
@@ -116,7 +117,7 @@ local heroB = {
 		x = 200, 
 		y = 200 
 	},
-    sprite = love.graphics.newImage("res/hero/Run__001.png"),
+    sprite = newImage("res/hero/Run__001.png"),
 	bgLayer = true,
     health = {
         hp = 2,
@@ -141,6 +142,10 @@ world = tiny.world(
 )
 
 function love.load()
+    if FULL_SCREEN then
+        love.window.setFullscreen(true)
+    end
+
 	camera = Camera(0, 0)
 	if SHOW_FPS then
 		fpsGraph = debugGraph:new('fps', 0, 0)
@@ -156,7 +161,14 @@ function love.update(dt)
 	end
 end
 
+local testImg = newImage("res/heroTest.png")
+-- testImg:setFilter("nearest")
+
 function love.draw()
+    -- 分辨率适配
+    local factor = view:getScaleFactor()
+    love.graphics.scale(factor)
+
 	local dt = love.timer.getDelta()
 	
 	camera:draw(function()
@@ -170,4 +182,6 @@ function love.draw()
 		fpsGraph:draw()
 		memGraph:draw()
 	end
+
+    love.graphics.draw(testImg, 100, 100, 0, 3, 3)
 end
