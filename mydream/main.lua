@@ -6,6 +6,7 @@ debugGraph = require "libs.debugGraph"
 anim8 = require "libs.anim8"
 Camera = require "libs.camera"
 Events = require "libs.events"
+-- require "libs.lovedebug"
 
 require "src.define"
 require "src.system"
@@ -119,7 +120,10 @@ local hero = {
 	coreLayer = true, -- 渲染层级
 	state = { -- 状态
 		curState = StateType.Stand
-	}
+	},
+	effectHitFly = { -- 可以被击飞
+		maxDis = 20 -- 最大击飞距离
+	}, 
 }
 
 local heroB = {
@@ -145,13 +149,16 @@ local heroB = {
     health = {
         hp = 2,
         maxHp = 2
-    }
+    },
+	effectHitFly = { -- 可以被击飞
+		maxDis = 20 -- 最大击飞距离
+	}, 
 }
 
 local colsSys = CollisionSystem()
 
 world = tiny.world(
-    EffectSystem(),
+    EffectHitFlySystem(),
 	MoveSystem(colsSys),
 	CollisionSystem(),
 	MeleeSystem(colsSys),

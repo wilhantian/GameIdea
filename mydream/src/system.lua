@@ -33,9 +33,7 @@
 ----------------------------------------------------
 -- 击飞特效
 -- effectHitFly = { -- 击飞特效
--- 	duration = 1.1,
--- 	x = -100,
--- 	y = 10
+-- 	maxDis = number
 -- }
 ----------------------------------------------------
 -- 移动系统
@@ -43,7 +41,7 @@
 MoveSystem = tiny.processingSystem(class "MoveSystem")
 
 function MoveSystem:init(colsSys)
-    self.filter = tiny.requireAll("move", "pos")
+    self.filter = tiny.requireAll("pos", "move")
     self.colsSys = colsSys
 
     events:on("stateChanged", bind(self.onStateChanged, self))
@@ -51,10 +49,10 @@ function MoveSystem:init(colsSys)
 end
 
 function MoveSystem:process(e, dt)
-    local ehxPos = self:effectHitFly(e, dt)
-    if ehxPos then
-        e.pos.x = ehxPos.x
-        e.pos.y = ehxPos.y
+    local ehf = e.effectHitFly -- 击飞特效
+    if ehf and ehf.isActive then
+        e.pos.x = ehf.targerPos.x
+        e.pos.y = ehf.targerPos.y
     else
         e.pos.x = e.pos.x + dt * e.move.speed.x
         e.pos.y = e.pos.y + dt * e.move.speed.y
@@ -74,18 +72,18 @@ end
 function MoveSystem:onStateChanged(e)
     local move = e.move
     if move then
-        move.speed.x, move.speed.y = self:_getSpeed(e)
+        move.speed.x, move.speed.y = self:getSpeed(e)
     end
 end
 
 function MoveSystem:onDirChanged(e)
     local move = e.move
     if move then
-        move.speed.x, move.speed.y = self:_getSpeed(e)
+        move.speed.x, move.speed.y = self:getSpeed(e)
     end
 end
 
-function MoveSystem:_getSpeed(e)
+function MoveSystem:getSpeed(e)
     local st = e.state.curState
     local dir = e.dir.curDir
     
@@ -101,32 +99,6 @@ function MoveSystem:_getSpeed(e)
     end
 
     return 0, 0
-end
-
--- 获取击飞特效位移点
-function MoveSystem:effectHitFly(e, dt)
-    local ehf = e.effectHitFly
-    
-    if ehf == nil then return nil end
-
-    local pos = e.pos
-    local duration = ehf.duration
-    local ox, oy = ehf.x, ehf.y
-
-    if duration < (ehf._clock or 0) then
-        e.effectHitFly = nil -- 移出击飞组件
-        return nil
-    end
-
-    if ehf._tween == nil then
-        ehf._startPos = {x = pos.x, y = pos.y}
-        ehf._cachePos = {x = pos.x, y = pos.y}
-        ehf._tween = tween.new(duration, ehf._cachePos, {x = e.pos.x + ox, y = e.pos.y + oy}, 'linear')
-    end
-
-    ehf._clock = (ehf._clock or 0) + dt
-    ehf._tween:update(dt)
-    return {x = ehf._cachePos.x, y = ehf._cachePos.y}
 end
 ----------------------------------------------------
 -- 渲染系统
@@ -179,10 +151,10 @@ function RenderSystem:process(e, dt)
             drawRect("line", x, y, e.cols.w, e.cols.h, {r = 0, g = 255, b = 0, a = 120})
         end
 
-        if e.melee and e.melee._cd < e.melee.cd and e.melee._debug then -- 近战调试
+        if e.melee and e.melee.clock < e.melee.cd and e.melee._debug then -- 近战调试
             local melee = e.melee
             local mx, my, w, h = x + melee._debug.x, y + melee._debug.y, melee._debug.w, melee._debug.h
-            drawRect("fill", mx, my, w, h, {r = 20, g = 20, b = 205, a = 255 - 255 * e.melee._cd / e.melee.cd})
+            drawRect("fill", mx, my, w, h, {r = 20, g = 20, b = 205, a = 255 - 255 * e.melee.clock / e.melee.cd})
         end
     end
 end
@@ -233,7 +205,6 @@ end
 function RenderSystem:onAdd(e)
     self:onStateOrDirChanged(e)
 end
-
 ----------------------------------------------------
 -- 碰撞系统
 ----------------------------------------------------
@@ -257,12 +228,14 @@ ControllerSystem = tiny.processingSystem(class "ControllerSystem")
 
 function ControllerSystem:init()
     self.filter = tiny.requireAll("controlable")
+
+    events:on("effectHitFlyDeActive", bind(self.onEffectHitFlyDeActive, self))
 end
 
 function ControllerSystem:process(e, dt)
     local ctrl = e.controlable
 
-    if e.effectHitFly then --含有击飞特效则不受控制
+    if e.effectHitFly and e.effectHitFly.isActive then --含有击飞特效则不受控制
         self:setState(e, StateType.HitFly)
         return
     end
@@ -316,6 +289,10 @@ function ControllerSystem:setDir(e, dir)
     events:emit("dirChanged", e)
 end
 
+-- 击飞效果移除
+function ControllerSystem:onEffectHitFlyDeActive(e)
+    self:setState(e, StateType.HitFly)
+end
 ----------------------------------------------------
 -- 近战系统
 ----------------------------------------------------
@@ -331,30 +308,14 @@ function MeleeSystem:process(e, dt)
     local melee = e.melee
     local dir = e.dir
 
-    melee._cd = (melee._cd or 0) + dt
+    melee.clock = melee.clock + dt
     if not love.keyboard.isDown(melee.key) then return end
-    if melee.cd > melee._cd then return end
-    melee._cd = 0
+    if melee.cd > melee.clock then return end
+    melee.clock = 0
 
-    local meleeData
-    if dir.curDir == DirType.Up then
-        meleeData = melee.up
-    elseif dir.curDir == DirType.RightUp then
-        meleeData = melee.rightUp or melee.right
-    elseif dir.curDir == DirType.Right then
-        meleeData = melee.right
-    elseif dir.curDir == DirType.RightDown then
-        meleeData = melee.rightDown or melee.right
-    elseif dir.curDir == DirType.Down then
-        meleeData = melee.down
-    elseif dir.curDir == DirType.LeftDown then
-        meleeData = melee.leftDown or melee.left
-    elseif dir.curDir == DirType.Left then
-        meleeData = melee.left
-    elseif dir.curDir == DirType.LeftUp then
-        meleeData = melee.leftUp or melee.left
-    else
-        print("近战未识别当前打击方向")
+    local meleeData = melee[dir.curDir]
+    if meleeData == nil then
+        return print("近战未识别当前打击方向")
     end
 
     local x, y, w, h = pos.x + meleeData.x, pos.y + meleeData.y, meleeData.w, meleeData.h
@@ -365,6 +326,10 @@ function MeleeSystem:process(e, dt)
     if len > 0 then
         events:emit("meleeCollision", e, cols, len)
     end
+end
+
+function MeleeSystem:onAdd(e)
+    e.melee.clock = e.melee.cd + 0.001
 end
 ----------------------------------------------------
 -- 相机系统
@@ -411,8 +376,6 @@ function HealthSystem:onMoveCollision(e, others, len)
     for i=1, len do
         local other = others[i].other
         
-        if e == other then return end
-
         if cols.type == ColsType.Hero and other.cols.type == ColsType.Monster then
             local curTime = love.timer.getTime()
             if health and curTime - (health.lastHitTime or 0) > 0.5 then
@@ -424,15 +387,26 @@ function HealthSystem:onMoveCollision(e, others, len)
     end
 end
 
-function HealthSystem:onMeleeCollision(e, cols, len)
+function HealthSystem:onMeleeCollision(e, others, len)
+    local cols = e.cols
+
+    for i=1, len do
+        local other = others[i]
+
+        if e ~= other then
+            if other.health then
+                other.health.hp = other.health.hp - 1
+            end
+        end
+    end
 end
 ----------------------------------------------------
--- 特效系统
+-- 击飞系统
 ----------------------------------------------------
-EffectSystem = tiny.processingSystem(class "EffectSystem")
+EffectHitFlySystem = tiny.processingSystem(class "EffectHitFlySystem")
 
-function EffectSystem:init()
-    -- self.filter = tiny.requireAll(todo))
+function EffectHitFlySystem:init()
+    self.filter = tiny.requireAll("effectHitFly", "pos")
 
     -- 移动碰撞
     events:on("moveCollision", bind(self.onMoveCollision, self))
@@ -440,22 +414,67 @@ function EffectSystem:init()
     events:on("meleeCollision", bind(self.onMeleeCollision, self))
 end
 
-function EffectSystem:onMoveCollision(e, others, len)
+function EffectHitFlySystem:process(e, dt)
+    local ehf = e.effectHitFly
+    local pos = e.pos
+
+    if not ehf.isActive then
+        return
+    end
+
+    if not ehf.tween then
+        local x, y = pos.x, pos.y
+        local ox, oy = ehf.x, ehf.y
+        ehf.startPos = {x = pos.x, y = pos.y}
+        ehf.targerPos = {x = pos.x, y = pos.y}
+        ehf.tween = tween.new(ehf.duration, ehf.targerPos, {x = x + ox, y = y + oy}, 'linear')
+    end
+
+    ehf.clock = ehf.clock + dt
+
+    if ehf.duration <= ehf.clock then
+        ehf.clock = 0
+        ehf.duration = 0
+        ehf.tween = nil
+        ehf.isActive = false
+        events:emit("effectHitFlyDeActive", e) -- 派发击飞特效移出事件
+        return
+    end
+
+    ehf.tween:update(dt)
+end
+
+function EffectHitFlySystem:onAdd(e)
+    local ehf = e.effectHitFly
+    ehf.duration = 0
+    ehf.clock = 0
+    ehf.isActive = false
+end
+
+function EffectHitFlySystem:onMoveCollision(e, others, len)
     for i=1, len do
         local other = others[i].other
-        
-        if e == other then return end
-        
-        e["effectHitFly"] = {
-            duration = 0.1,
-            x = -20,
-            y = -20
-        }
+
+        if e.effectHitFly then 
+            e.effectHitFly.x = -1 * e.effectHitFly.maxDis
+            e.effectHitFly.y = -1 * e.effectHitFly.maxDis
+            e.effectHitFly.duration = 0.16
+            e.effectHitFly.isActive = true
+        end
     end
 end
 
-function EffectSystem:onMeleeCollision(e, others, len)
+function EffectHitFlySystem:onMeleeCollision(e, others, len)
     for i=1, len do
-        -- TODO
+        local other = others[i]
+
+        if e ~= other then
+            if other.effectHitFly then
+                other.effectHitFly.x = -1 * other.effectHitFly.maxDis
+                other.effectHitFly.y = -1 * other.effectHitFly.maxDis
+                other.effectHitFly.duration = 0.16
+                other.effectHitFly.isActive = true
+            end
+        end
     end
 end

@@ -111,8 +111,31 @@ function bind(func, targer)
   end
 end
 
+-------------------------------------------------------
+-- 创建图片
+-------------------------------------------------------
 function newImage(...)
     local img = love.graphics.newImage(...)
     img:setFilter("nearest")
     return img
+end
+
+-------------------------------------------------------
+-- 字符串首字母大写
+-------------------------------------------------------
+function firstChatUpper(str)
+    if str == nil then 
+        return nil 
+    end
+    return string.upper(string.sub(str, 1, 1)) .. (string.sub(str, 2) or '')
+end
+
+-------------------------------------------------------
+-- 字符串首字母小写
+-------------------------------------------------------
+function firstChatLower(str)
+    if str == nil then 
+        return nil 
+    end
+    return string.lower(string.sub(str, 1, 1)) .. (string.sub(str, 2) or '')
 end
