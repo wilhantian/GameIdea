@@ -155,10 +155,18 @@ local heroB = {
 	}, 
 }
 
+local bg = {
+	pos = {x=0, y=0},
+	sprite = newImage("res/testBg.png"),
+	bgLayer = true,
+}
+
 local colsSys = CollisionSystem()
+local stateSys = StateSystem()
 
 world = tiny.world(
     EffectHitFlySystem(),
+	stateSys,
 	MoveSystem(colsSys),
 	CollisionSystem(),
 	MeleeSystem(colsSys),
@@ -167,7 +175,8 @@ world = tiny.world(
 	RenderSystem("bgLayer"),
 	RenderSystem("coreLayer"),
 	RenderSystem("lightLayer"),
-	ControllerSystem(),
+	ControllerSystem(stateSys),
+	bg,
 	hero,
 	heroB
 )

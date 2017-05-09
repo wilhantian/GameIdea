@@ -229,9 +229,9 @@ end
 ----------------------------------------------------
 ControllerSystem = tiny.processingSystem(class "ControllerSystem")
 
-function ControllerSystem:init()
+function ControllerSystem:init(stateSys)
     self.filter = tiny.requireAll("controlable")
-
+    self.stateSys = stateSys
     events:on("effectHitFlyDeActive", bind(self.onEffectHitFlyDeActive, self))
 end
 
@@ -239,7 +239,7 @@ function ControllerSystem:process(e, dt)
     local ctrl = e.controlable
 
     if e.effectHitFly and e.effectHitFly.isActive then --含有击飞特效则不受控制
-        self:setState(e, StateType.HitFly)
+        self.stateSys:setState(e, StateType.HitFly)
         return
     end
 
@@ -260,41 +260,19 @@ function ControllerSystem:process(e, dt)
     if l and d then dir = DirType.LeftDown end
 
     if l or r or u or d then
-        self:setState(e, StateType.Run)
+        self.stateSys:setState(e, StateType.Run)
     else
-        self:setState(e, StateType.Stand)
+        self.stateSys:setState(e, StateType.Stand)
     end
 
     if dir then
-        self:setDir(e, dir)
+        self.stateSys:setDir(e, dir)
     end
-end
-
--- 切换组件状态
-function ControllerSystem:setState(e, state)
-    if e.state == nil or e.state.curState == state then 
-        return
-    end
-    
-    e.state.lastState = e.state.curState
-    e.state.curState = state
-    events:emit("stateChanged", e)
-end
-
--- 切换组件方向
-function ControllerSystem:setDir(e, dir)
-    if e.dir == nil or e.dir.curDir == dir then 
-        return
-    end
-    
-    e.dir.lastDir = e.dir.curDir
-    e.dir.curDir = dir
-    events:emit("dirChanged", e)
 end
 
 -- 击飞效果移除
 function ControllerSystem:onEffectHitFlyDeActive(e)
-    self:setState(e, StateType.HitFly)
+    self.stateSys:setState(e, StateType.HitFly)
 end
 ----------------------------------------------------
 -- 近战系统
@@ -480,4 +458,36 @@ function EffectHitFlySystem:onMeleeCollision(e, others, len)
             end
         end
     end
+end
+----------------------------------------------------
+-- 状态系统 or 方向系统
+-- 目前看来 方位(方向)组件仅仅属于状态的扩展
+-- 故将方向组件作为一种状态
+----------------------------------------------------
+StateSystem = tiny.processingSystem(class "StateSystem")
+
+function StateSystem:init()
+end
+
+function StateSystem:process(e, dt)
+end
+
+function StateSystem:setState(e, state)
+    if e.state == nil or e.state.curState == state then 
+        return
+    end
+    
+    e.state.lastState = e.state.curState
+    e.state.curState = state
+    events:emit("stateChanged", e)
+end
+
+function StateSystem:setDir(e, dir)
+    if e.dir == nil or e.dir.curDir == dir then 
+        return
+    end
+    
+    e.dir.lastDir = e.dir.curDir
+    e.dir.curDir = dir
+    events:emit("dirChanged", e)
 end
