@@ -133,17 +133,20 @@ function RenderSystem:process(e, dt)
         end
     end
 
+    local w, h
     if anim then -- 动画组件
+        w, h = anim.curAnim:getDimensions()
         drawList:add(function()
             if anim.curAnim then
                 anim.curAnim:update(dt)
                 anim.curAnim:draw(sprite, x, y, rotate, scaleX, scaleY, offsetX * -1, offsetY * -1)
             end
-        end, y)
+        end, y + (h + offsetY)*scaleY) -- fixme 性能问题
     elseif sprite then
+        w, h = sprite:getDimensions()
         drawList:add(function()
             love.graphics.draw(sprite, x, y, rotate, scaleX, scaleY, offsetX * -1, offsetY * -1)
-        end, y)
+        end, y + (h + offsetY)*scaleY) -- fixme 性能问题
     end
 
     if DEBUG_AABB then -- 碰撞区域调试

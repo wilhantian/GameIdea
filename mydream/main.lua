@@ -38,12 +38,12 @@ animStandRight:flipH()
 animStandUp:flipH()
 
 local hero = {
-	cols = { -- 碰撞组件
-		type = ColsType.Hero,
-		mask = {"hero", "hero"},
-		w = 90,
-		h = 40
-	},
+	-- cols = { -- 碰撞组件
+	-- 	type = ColsType.Hero,
+	-- 	mask = {"hero", "hero"},
+	-- 	w = 90,
+	-- 	h = 40
+	-- },
 	move = { -- 移动组件
 		mask = function()end,
 		speed = {
@@ -123,7 +123,7 @@ local hero = {
 	},
 	effectHitFly = { -- 可以被击飞
 		maxDis = 20 -- 最大击飞距离
-	}, 
+	},
 }
 
 local heroB = {
@@ -192,9 +192,6 @@ function love.update(dt)
 	end
 end
 
-local testImg = newImage("res/heroTest.png")
--- testImg:setFilter("nearest")
-
 function love.draw()
     -- 分辨率适配
     local factor = view:getScaleFactor()
@@ -213,6 +210,4 @@ function love.draw()
 		fpsGraph:draw()
 		memGraph:draw()
 	end
-
-    love.graphics.draw(testImg, 100, 100, 0, 3, 3)
 end
