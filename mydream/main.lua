@@ -6,12 +6,12 @@ debugGraph = require "libs.debugGraph"
 anim8 = require "libs.anim8"
 gamera = require "libs.gamera"
 Events = require "libs.events"
+push = require "libs.push"
 -- require "libs.lovedebug"
 
 require "src.define"
 require "src.system"
 require "src.utils"
-view = require "src.view"
 
 aabb = bump.newWorld(64)
 drawList = SortFunc()
@@ -157,7 +157,7 @@ local heroB = {
 
 local bg = {
 	pos = {x=0, y=0},
-	sprite = newImage("res/testBg.png"),
+	sprite = newImage("res/timg.jpeg"),
 	bgLayer = true,
 }
 
@@ -181,13 +181,20 @@ world = tiny.world(
 	heroB
 )
 
+push:setupScreen(DESIGN_WIDTH, DESIGN_HEIGHT, love.graphics.getWidth(), love.graphics.getHeight(), {
+    fullscreen = false,
+    resizable = true,
+    pixelperfect = true,
+    stretched = false,
+    highdpi = true
+})
+
 function love.load()
     if FULL_SCREEN then
         love.window.setFullscreen(true)
     end
 
 	camera = gamera.new(0, 0, 1500, 1500)
-	camera:setWindow(0, 0, 500, 500)
 	if SHOW_FPS then
 		fpsGraph = debugGraph:new('fps', 0, 0)
 		memGraph = debugGraph:new('mem', 0, 30)
@@ -196,15 +203,30 @@ function love.load()
 	love.graphics.setLineStyle("rough")
 
 	local pixelcode = [[
+        float get_mask(float dist, float radius, float gradient)//gradient变化率 渐变梯度
+        {
+            float brightness = 1.;
+            if (dist < radius) {
+                float dd = dist /radius;
+                return 1.0 - smoothstep(0.0, gradient, pow(dd, brightness));
+            }
+            return 0.0;
+        }
+
         vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords )
         {
+            vec3 light = vec3(300, 200, 80);
             vec4 texcolor = Texel(texture, texture_coords);
-			if ( screen_coords.x > 100 && screen_coords.x < 200 )
-			{
-				return texcolor * vec4(1, 0, 0, 1);
-			}
+            float dis = distance(vec2(screen_coords.x, screen_coords.y), vec2(light.x, light.y));
+
+            if(dis < light.z)
+            {
+                return texcolor * vec4(1, 0, 0, 1) * (1 - (dis / light.z));
+            }
             return texcolor * color;
+            //-- return texcolor * vec4(0,0,0,0);
         }
+
     ]]
  
     local vertexcode = [[
@@ -225,30 +247,24 @@ function love.update(dt)
 end
 
 function love.draw()
-    -- 分辨率适配
-    local factor = view:getScaleFactor()
-	local dt = love.timer.getDelta()
-	
-	love.graphics.push()
-		-- love.graphics.translate(view:getTranslatePosition())
-		-- love.graphics.scale(factor)
-		camera:draw(function(l,t,w,h)
-			love.graphics.setShader(shader)
-			world:update(dt)
-			drawList:sort()
-			drawList:call()
-			drawList:clear()
-			love.graphics.setShader()
-		end)
-		-- drawGrid()
-  	love.graphics.pop()
-	drawFPS()
+    local dt = love.timer.getDelta()
+
+    push:start()
+        camera:draw(function(l,t,w,h)
+            love.graphics.setShader(shader)
+            world:update(dt)
+            drawList:sort()
+            drawList:call()
+            drawList:clear()
+            love.graphics.setShader()
+        end)
+        drawGrid() -- 绘制相机调试网格
+        drawFPS() -- 绘制FPS
+    push:finish()
 end
 
-function love.resize( w, h )
-	local x, y = view:getTranslatePosition()
-	camera:setWindow(0, 0, w, h)
-	camera:setScale(view:getScaleFactor(false))
+function love.resize(w, h)
+    push:resize(w, h)
 end
 
 function drawFPS()
@@ -260,7 +276,7 @@ end
 
 function drawGrid()
 	if SHOW_GRID then
-		local lw, lh = view:getLogicSize()
+		local lw, lh = push:getWidth(), push:getHeight()
 		local r, g, b, a = love.graphics.getColor()
 		love.graphics.setColor(200, 200, 255, 120)
 		love.graphics.line(lw/2, 0, lw/2, lh)
