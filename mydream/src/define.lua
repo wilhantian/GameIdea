@@ -1,9 +1,10 @@
 -- 常量宏定义
 SHOW_FPS = true
+SHOW_GRID = true
 DEBUG_AABB = true
 FULL_SCREEN = false
 DESIGN_WIDTH = 800
-DESIGN_HEIGHT = 622
+DESIGN_HEIGHT = 600
 
 -- 碰撞类型
 ColsType = {

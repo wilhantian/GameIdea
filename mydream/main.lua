@@ -4,7 +4,7 @@ bump = require "libs.bump"
 tween = require "libs.tween"
 debugGraph = require "libs.debugGraph"
 anim8 = require "libs.anim8"
-Camera = require "libs.camera"
+gamera = require "libs.gamera"
 Events = require "libs.events"
 -- require "libs.lovedebug"
 
@@ -186,12 +186,35 @@ function love.load()
         love.window.setFullscreen(true)
     end
 
-	camera = Camera(0, 0)
+	camera = gamera.new(0, 0, 1500, 1500)
+	camera:setWindow(0, 0, 500, 500)
 	if SHOW_FPS then
 		fpsGraph = debugGraph:new('fps', 0, 0)
 		memGraph = debugGraph:new('mem', 0, 30)
 	end
 	love.graphics.setDefaultFilter("nearest", "nearest")
+	love.graphics.setLineStyle("rough")
+
+	local pixelcode = [[
+        vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords )
+        {
+            vec4 texcolor = Texel(texture, texture_coords);
+			if ( screen_coords.x > 100 && screen_coords.x < 200 )
+			{
+				return texcolor * vec4(1, 0, 0, 1);
+			}
+            return texcolor * color;
+        }
+    ]]
+ 
+    local vertexcode = [[
+        vec4 position( mat4 transform_projection, vec4 vertex_position )
+        {
+            return transform_projection * vertex_position;
+        }
+    ]]
+
+	shader = love.graphics.newShader(pixelcode, vertexcode)
 end
 
 function love.update(dt)
@@ -204,19 +227,44 @@ end
 function love.draw()
     -- 分辨率适配
     local factor = view:getScaleFactor()
-    love.graphics.scale(factor)
-
 	local dt = love.timer.getDelta()
 	
-	camera:draw(function()
-		world:update(dt)
-		drawList:sort()
-		drawList:call()
-		drawList:clear()
-	end)
+	love.graphics.push()
+		-- love.graphics.translate(view:getTranslatePosition())
+		-- love.graphics.scale(factor)
+		camera:draw(function(l,t,w,h)
+			love.graphics.setShader(shader)
+			world:update(dt)
+			drawList:sort()
+			drawList:call()
+			drawList:clear()
+			love.graphics.setShader()
+		end)
+		-- drawGrid()
+  	love.graphics.pop()
+	drawFPS()
+end
 
+function love.resize( w, h )
+	local x, y = view:getTranslatePosition()
+	camera:setWindow(0, 0, w, h)
+	camera:setScale(view:getScaleFactor(false))
+end
+
+function drawFPS()
 	if SHOW_FPS then
 		fpsGraph:draw()
 		memGraph:draw()
+	end
+end
+
+function drawGrid()
+	if SHOW_GRID then
+		local lw, lh = view:getLogicSize()
+		local r, g, b, a = love.graphics.getColor()
+		love.graphics.setColor(200, 200, 255, 120)
+		love.graphics.line(lw/2, 0, lw/2, lh)
+		love.graphics.line(0, lh/2, lw, lh/2)
+		love.graphics.setColor(r, g, b, a)
 	end
 end

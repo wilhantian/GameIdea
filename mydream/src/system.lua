@@ -323,7 +323,7 @@ end
 
 function CameraSystem:process(e, dt)
     local dx, dy = e.pos.x, e.pos.y
-    camera:lookAt(dx, dy)
+    camera:setPosition(dx, dy)
 end
 ----------------------------------------------------
 -- 生命系统
