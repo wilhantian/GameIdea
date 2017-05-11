@@ -52,7 +52,7 @@ local hero = {
 		}
 	},
 	pos = { -- 坐标组件
-		x = 100,
+		x = 200,
 		y = 200
 	},
     offset = { -- 偏移量(主要用于sprite的位置)
@@ -124,6 +124,16 @@ local hero = {
 	effectHitFly = { -- 可以被击飞
 		maxDis = 20 -- 最大击飞距离
 	},
+	lights = {
+		x = 0,
+		y = 0,
+		w = 120,
+		h = 120,
+		r = 1,
+		g = 0,
+		b = 0,
+		a = 1
+	}
 }
 
 local heroB = {
@@ -153,6 +163,16 @@ local heroB = {
 	effectHitFly = { -- 可以被击飞
 		maxDis = 20 -- 最大击飞距离
 	}, 
+	lights = {
+		x = 100,
+		y = 50,
+		w = 120,
+		h = 120,
+		r = 0,
+		g = 0,
+		b = 1,
+		a = 1
+	}
 }
 
 local bg = {
@@ -164,14 +184,23 @@ local bg = {
 local colsSys = CollisionSystem()
 local stateSys = StateSystem()
 
+-- 灯光Shader
+local pixelcode = love.filesystem.read("res/lights.fsh")
+local vertexcode = love.filesystem.read("res/lights.vfx")
+sceneShader = love.graphics.newShader(pixelcode, vertexcode)
+
+-- 镜头
+local camera = gamera.new(0, 0, 1500, 1500)
+
 world = tiny.world(
+	LightsSystem(sceneShader, camera),
     EffectHitFlySystem(),
 	stateSys,
 	MoveSystem(colsSys),
 	CollisionSystem(),
 	MeleeSystem(colsSys),
     HealthSystem(),
-	CameraSystem(),
+	CameraSystem(camera),
 	RenderSystem("bgLayer"),
 	RenderSystem("coreLayer"),
 	RenderSystem("lightLayer"),
@@ -184,7 +213,7 @@ world = tiny.world(
 push:setupScreen(DESIGN_WIDTH, DESIGN_HEIGHT, love.graphics.getWidth(), love.graphics.getHeight(), {
     fullscreen = false,
     resizable = true,
-    pixelperfect = true,
+    -- pixelperfect = true,
     stretched = false,
     highdpi = true
 })
@@ -194,49 +223,12 @@ function love.load()
         love.window.setFullscreen(true)
     end
 
-	camera = gamera.new(0, 0, 1500, 1500)
 	if SHOW_FPS then
 		fpsGraph = debugGraph:new('fps', 0, 0)
 		memGraph = debugGraph:new('mem', 0, 30)
 	end
 	love.graphics.setDefaultFilter("nearest", "nearest")
 	love.graphics.setLineStyle("rough")
-
-	local pixelcode = [[
-        float get_mask(float dist, float radius, float gradient)//gradient变化率 渐变梯度
-        {
-            float brightness = 1.;
-            if (dist < radius) {
-                float dd = dist /radius;
-                return 1.0 - smoothstep(0.0, gradient, pow(dd, brightness));
-            }
-            return 0.0;
-        }
-
-        vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords )
-        {
-            vec3 light = vec3(300, 200, 80);
-            vec4 texcolor = Texel(texture, texture_coords);
-            float dis = distance(vec2(screen_coords.x, screen_coords.y), vec2(light.x, light.y));
-
-            if(dis < light.z)
-            {
-                return texcolor * vec4(1, 0, 0, 1) * (1 - (dis / light.z));
-            }
-            return texcolor * color;
-            //-- return texcolor * vec4(0,0,0,0);
-        }
-
-    ]]
- 
-    local vertexcode = [[
-        vec4 position( mat4 transform_projection, vec4 vertex_position )
-        {
-            return transform_projection * vertex_position;
-        }
-    ]]
-
-	shader = love.graphics.newShader(pixelcode, vertexcode)
 end
 
 function love.update(dt)
@@ -251,7 +243,7 @@ function love.draw()
 
     push:start()
         camera:draw(function(l,t,w,h)
-            love.graphics.setShader(shader)
+            love.graphics.setShader(sceneShader)
             world:update(dt)
             drawList:sort()
             drawList:call()

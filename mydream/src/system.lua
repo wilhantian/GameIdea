@@ -317,13 +317,14 @@ end
 ----------------------------------------------------
 CameraSystem = tiny.processingSystem(class "CameraSystem")
 
-function CameraSystem:init()
+function CameraSystem:init(camera)
     self.filter = tiny.requireAll("pos", tiny.requireAny("controlable"))
+    self.camera = camera
 end
 
 function CameraSystem:process(e, dt)
     local dx, dy = e.pos.x, e.pos.y
-    camera:setPosition(dx, dy)
+    self.camera:setPosition(dx, dy)
 end
 ----------------------------------------------------
 -- 生命系统
@@ -467,6 +468,7 @@ end
 StateSystem = tiny.processingSystem(class "StateSystem")
 
 function StateSystem:init()
+    self.filter = tiny.requireAll("state")
 end
 
 function StateSystem:process(e, dt)
@@ -490,4 +492,51 @@ function StateSystem:setDir(e, dir)
     e.dir.lastDir = e.dir.curDir
     e.dir.curDir = dir
     events:emit("dirChanged", e)
+end
+----------------------------------------------------
+-- 灯光系统
+----------------------------------------------------
+LightsSystem = tiny.processingSystem(class "LightsSystem")
+
+function LightsSystem:init(shader, camera)
+    self.filter = tiny.requireAll("lights", "pos")
+	self.shader = shader
+    self.camera = camera
+
+    self.lightsList = {"lights"}
+    self.numLights = 0
+end
+
+function LightsSystem:preProcess(dt)
+    self.lightsList = {"lights"}
+    self.numLights = 0
+end
+
+function LightsSystem:postProcess(dt)
+    table.insert(self.lightsList, 'nil')
+
+    local shader = self.shader
+    shader:sendInt("numLights", self.numLights)
+	shader:send(unpack(self.lightsList))
+	shader:send("minDarkness", 0)
+	shader:send("maxBrightness", 1)
+end
+
+function LightsSystem:process(e, dt)
+    local lights = e.lights
+    local pos = e.pos
+
+    local x, y = self.camera:toScreen(pos.x + lights.x, pos.y + lights.y)
+
+    -- x y w h r g b a
+    table.insert(self.lightsList, x)
+    table.insert(self.lightsList, y)
+    table.insert(self.lightsList, lights.w)
+    table.insert(self.lightsList, lights.h)
+    table.insert(self.lightsList, lights.r)
+    table.insert(self.lightsList, lights.g)
+    table.insert(self.lightsList, lights.b)
+    table.insert(self.lightsList, lights.a)
+
+    self.numLights = self.numLights + 1
 end
