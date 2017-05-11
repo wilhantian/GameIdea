@@ -127,11 +127,11 @@ local hero = {
 	lights = {
 		x = 0,
 		y = 0,
-		w = 120,
-		h = 120,
-		r = 1,
-		g = 0,
-		b = 0,
+		w = 400,
+		h = 30,
+		r = 0.2,
+		g = 0.6,
+		b = 0.2,
 		a = 1
 	}
 }
@@ -167,7 +167,7 @@ local heroB = {
 		x = 100,
 		y = 50,
 		w = 120,
-		h = 120,
+		h = 100,
 		r = 0,
 		g = 0,
 		b = 1,
@@ -178,7 +178,7 @@ local heroB = {
 local bg = {
 	pos = {x=0, y=0},
 	sprite = newImage("res/timg.jpeg"),
-	bgLayer = true,
+	lightLayer = true,
 }
 
 local colsSys = CollisionSystem()
@@ -242,14 +242,14 @@ function love.draw()
     local dt = love.timer.getDelta()
 
     push:start()
+		love.graphics.setShader(sceneShader)
         camera:draw(function(l,t,w,h)
-            love.graphics.setShader(sceneShader)
             world:update(dt)
             drawList:sort()
             drawList:call()
             drawList:clear()
-            love.graphics.setShader()
         end)
+		love.graphics.setShader()
         drawGrid() -- 绘制相机调试网格
         drawFPS() -- 绘制FPS
     push:finish()
@@ -270,7 +270,7 @@ function drawGrid()
 	if SHOW_GRID then
 		local lw, lh = push:getWidth(), push:getHeight()
 		local r, g, b, a = love.graphics.getColor()
-		love.graphics.setColor(200, 200, 255, 120)
+		love.graphics.setColor(255, 255, 255, 255)
 		love.graphics.line(lw/2, 0, lw/2, lh)
 		love.graphics.line(0, lh/2, lw, lh/2)
 		love.graphics.setColor(r, g, b, a)

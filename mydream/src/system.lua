@@ -495,6 +495,7 @@ function StateSystem:setDir(e, dir)
 end
 ----------------------------------------------------
 -- 灯光系统
+-- TODO 目前仅支持正圆形灯光, 随着游戏发展可能需要椭圆形灯光
 ----------------------------------------------------
 LightsSystem = tiny.processingSystem(class "LightsSystem")
 

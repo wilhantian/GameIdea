@@ -30,7 +30,7 @@ vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords 
         x = lights[i*kNumFloatsPreShaderLight+0];
         y = lights[i*kNumFloatsPreShaderLight+1];
         w = lights[i*kNumFloatsPreShaderLight+2];
-        h = lights[i*kNumFloatsPreShaderLight+3];
+        h = lights[i*kNumFloatsPreShaderLight+3];//TODO 目前尚未实现椭圆形灯光，仅支持正圆形灯光，故灯光高度可为任意值
         r = lights[i*kNumFloatsPreShaderLight+4];
         g = lights[i*kNumFloatsPreShaderLight+5];
         b = lights[i*kNumFloatsPreShaderLight+6];
