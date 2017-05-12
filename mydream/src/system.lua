@@ -529,6 +529,58 @@ function LightsSystem:process(e, dt)
 
     local x, y = self.camera:toScreen(pos.x + lights.x, pos.y + lights.y)
 
+    -- 是否闪烁
+    if lights.blink then
+        local blink = lights.blink
+        -- if blink.clock == nil then
+        --     blink.startW = lights.w
+        --     blink.startH = lights.h
+        --     blink.clock = 0
+        --     blink.isLight = true
+        --     blink.duration = 
+        --     lights.w = blink.startW * utils.random(blink.darkRatio[1], blink.darkRatio[2])
+        -- end
+        
+        -- blink.clock = dt + blink.clock
+
+        -- if blink.clock >= blink.duration then
+        --     blink.clock = 0
+        --     blink.isLight = not blink.isLight
+
+        --     if blink.isLight then
+        --         lights.w = blink.startW * utils.random(blink.darkRatio[1], blink.darkRatio[2])
+        --         blink.duration = utils.random(blink.lightTime[1], blink.lightTime[2])
+        --     else
+        --         lights.w = blink.startW * utils.random(blink.lightRatio[1], blink.lightRatio[2])
+        --         blink.duration = utils.random(blink.darkTime[1], blink.darkTime[2])
+        --     end
+        -- end
+        -----------------------------------------------------------------------------------------
+        if blink.tween == nil then
+            blink.isLight = true
+            blink.startW = lights.w
+            blink.startH = lights.h
+            lights.w = blink.startW * utils.random(blink.lightRatio[1], blink.lightRatio[2])
+            lights.h = blink.startH * utils.random(blink.lightRatio[1], blink.lightRatio[2])
+            local duration = utils.random(blink.lightTime[1], blink.lightTime[2])
+            local targer = {w=blink.startW * utils.random(blink.darkRatio[1], blink.darkRatio[2]), h=blink.startH * utils.random(blink.darkRatio[1], blink.darkRatio[2])}
+            blink.tween = tween.new(duration, lights, targer, 'linear')
+        end
+
+        if blink.tween:update(dt) then
+            local duration, targer
+            blink.isLight = not blink.isLight
+            if blink.isLight then
+                duration = utils.random(blink.lightTime[1], blink.lightTime[2])
+                targer = {w=blink.startW * utils.random(blink.darkRatio[1], blink.darkRatio[2]), h=blink.startH * utils.random(blink.darkRatio[1], blink.darkRatio[2])}
+            else
+                duration = utils.random(blink.darkTime[1], blink.darkTime[2])
+                targer = {w=blink.startW * utils.random(blink.lightRatio[1], blink.lightRatio[2]), h=blink.startH * utils.random(blink.lightRatio[1], blink.lightRatio[2])}
+            end
+            blink.tween = tween.new(duration, lights, targer, 'linear')
+        end
+    end
+
     -- x y w h r g b a
     table.insert(self.lightsList, x)
     table.insert(self.lightsList, y)

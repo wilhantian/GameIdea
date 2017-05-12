@@ -171,7 +171,14 @@ local heroB = {
 		r = 0,
 		g = 0,
 		b = 1,
-		a = 1
+		a = 1,
+
+		blink = {
+			lightRatio = {0.8, 1}, -- 闪烁宽度因子
+			darkRatio = {0.8, 1}, -- 闪烁高度因子(暂未使用)
+			lightTime = {0.1, 0.5}, -- 亮度时间
+			darkTime = {0.1, 0.5}, -- 暗度时间
+		}
 	}
 }
 
@@ -187,7 +194,7 @@ local stateSys = StateSystem()
 -- 灯光Shader
 local pixelcode = love.filesystem.read("res/lights.fsh")
 local vertexcode = love.filesystem.read("res/lights.vfx")
-sceneShader = love.graphics.newShader(pixelcode, vertexcode)
+local sceneShader = love.graphics.newShader(pixelcode, vertexcode)
 
 -- 镜头
 local camera = gamera.new(0, 0, 1500, 1500)

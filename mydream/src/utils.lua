@@ -46,6 +46,13 @@ function printt( tbl , level, filteDefault)
   print(indent_str .. "}")
 end
 
+utils = {}
+function utils.random(a, b)
+  if not a then a, b = 0, 1 end
+  if not b then b = 0 end
+  return a + math.random() * (b - a)
+end
+
 -------------------------------------------------------
 -- 添加闪烁组件
 -- 应当废弃此方法，废弃后使用class关键字手动添加
