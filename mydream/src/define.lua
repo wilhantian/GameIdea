@@ -37,3 +37,10 @@ DirType = {
     Left = "left",
     LeftUp = "leftUp"
 }
+
+-- 层级类型
+LayerType = {
+    Floor = 1,
+    Core = 2,
+    Light = 3
+}

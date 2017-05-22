@@ -14,8 +14,12 @@ require "src.system"
 require "src.utils"
 
 aabb = bump.newWorld(64)
-drawList = SortFunc()
 events = Events:new()
+
+drawList = {}
+drawList[LayerType.Floor] = SortFunc()
+drawList[LayerType.Core] = SortFunc()
+drawList[LayerType.Light] = SortFunc()
 
 ------------------------------------
 -- TEST
@@ -38,12 +42,12 @@ animStandRight:flipH()
 animStandUp:flipH()
 
 local hero = {
-	-- cols = { -- 碰撞组件
-	-- 	type = ColsType.Hero,
-	-- 	mask = {"hero", "hero"},
-	-- 	w = 90,
-	-- 	h = 40
-	-- },
+	cols = { -- 碰撞组件
+		type = ColsType.Hero,
+		mask = {"hero", "hero"},
+		w = 90,
+		h = 40
+	},
 	move = { -- 移动组件
 		mask = function()end,
 		speed = {
@@ -118,6 +122,7 @@ local hero = {
 		right = 'd'
 	},
 	coreLayer = true, -- 渲染层级
+    layer = LayerType.Light, -- 层级
 	state = { -- 状态
 		curState = StateType.Stand
 	},
@@ -155,7 +160,8 @@ local heroB = {
 		y = 200 
 	},
     sprite = newImage("res/hero/Run__001.png"),
-	bgLayer = true,
+	-- bgLayer = true,
+    layer = LayerType.Core,
     health = {
         hp = 2,
         maxHp = 2
@@ -164,7 +170,7 @@ local heroB = {
 		maxDis = 20 -- 最大击飞距离
 	}, 
 	lights = {
-		x = 100,
+		x = 40,
 		y = 50,
 		w = 120,
 		h = 100,
@@ -186,6 +192,7 @@ local bg = {
 	pos = {x=0, y=0},
 	sprite = newImage("res/timg.jpeg"),
 	lightLayer = true,
+    layer = LayerType.Floor
 }
 
 local colsSys = CollisionSystem()
@@ -208,9 +215,7 @@ world = tiny.world(
 	MeleeSystem(colsSys),
     HealthSystem(),
 	CameraSystem(camera),
-	RenderSystem("bgLayer"),
-	RenderSystem("coreLayer"),
-	RenderSystem("lightLayer"),
+	RenderSystem(),
 	ControllerSystem(stateSys),
 	bg,
 	hero,
@@ -252,9 +257,7 @@ function love.draw()
 		love.graphics.setShader(sceneShader)
         camera:draw(function(l,t,w,h)
             world:update(dt)
-            drawList:sort()
-            drawList:call()
-            drawList:clear()
+            render()
         end)
 		love.graphics.setShader()
         drawGrid() -- 绘制相机调试网格
@@ -271,6 +274,18 @@ function drawFPS()
 		fpsGraph:draw()
 		memGraph:draw()
 	end
+end
+
+function render()
+    renderLayer(drawList[LayerType.Floor])
+    renderLayer(drawList[LayerType.Core])
+    renderLayer(drawList[LayerType.Light])
+end
+
+function renderLayer(dl)
+    dl:sort()
+    dl:call()
+    dl:clear()
 end
 
 function drawGrid()
