@@ -20,6 +20,7 @@ drawList = {}
 drawList[LayerType.Floor] = SortFunc()
 drawList[LayerType.Core] = SortFunc()
 drawList[LayerType.Light] = SortFunc()
+drawList[LayerType.Debug] = SortFunc()
 
 ------------------------------------
 -- TEST
@@ -280,6 +281,7 @@ function render()
     renderLayer(drawList[LayerType.Floor])
     renderLayer(drawList[LayerType.Core])
     renderLayer(drawList[LayerType.Light])
+    renderLayer(drawList[LayerType.Debug])
 end
 
 function renderLayer(dl)

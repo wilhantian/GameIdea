@@ -150,15 +150,17 @@ function RenderSystem:process(e, dt)
     end
 
     if DEBUG_AABB then -- 碰撞区域调试
-        if e.cols then
-            drawRect("line", x, y, e.cols.w, e.cols.h, {r = 0, g = 255, b = 0, a = 120})
-        end
+        drawList[e.layer]:add(function()
+            if e.cols then
+                drawRect("line", x, y, e.cols.w, e.cols.h, {r = 0, g = 255, b = 0, a = 120})
+            end
 
-        if e.melee and e.melee.clock < e.melee.cd and e.melee._debug then -- 近战调试
-            local melee = e.melee
-            local mx, my, w, h = x + melee._debug.x, y + melee._debug.y, melee._debug.w, melee._debug.h
-            drawRect("fill", mx, my, w, h, {r = 20, g = 20, b = 205, a = 255 - 255 * e.melee.clock / e.melee.cd})
-        end
+            if e.melee and e.melee.clock < e.melee.cd and e.melee._debug then -- 近战调试
+                local melee = e.melee
+                local mx, my, w, h = x + melee._debug.x, y + melee._debug.y, melee._debug.w, melee._debug.h
+                drawRect("fill", mx, my, w, h, {r = 20, g = 20, b = 205, a = 255 - 255 * e.melee.clock / e.melee.cd})
+            end
+        end, 0)
     end
 end
 
