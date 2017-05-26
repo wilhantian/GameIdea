@@ -4,7 +4,8 @@
 # Run
 - 在love2d.org中下载对应平台的引擎
 - 打开love可执行文件
-- 将mydraeam拖入love窗口即可
+- 将mydraeam压缩为.zip文件
+- 将压缩文件拖入love窗口即可
 
 # Todo List
 - [x] 渲染系统
