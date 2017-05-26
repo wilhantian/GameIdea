@@ -1,6 +1,11 @@
 # 未知的游戏
 > by WilhanTian
 
+# Run
+- 在love.org中下载对应平台的引擎
+- 打开love可执行文件
+- 将mydraeam拖入love窗口即可
+
 # Todo List
 - [x] 渲染系统
 - [x] 移动系统
