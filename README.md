@@ -2,7 +2,7 @@
 > by WilhanTian
 
 # Run
-- 在love.org中下载对应平台的引擎
+- 在love2d.org中下载对应平台的引擎
 - 打开love可执行文件
 - 将mydraeam拖入love窗口即可
 
