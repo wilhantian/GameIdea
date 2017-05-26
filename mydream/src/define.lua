@@ -42,5 +42,6 @@ DirType = {
 LayerType = {
     Floor = 1,
     Core = 2,
-    Light = 3
+    Light = 3,
+    Debug = 4
 }

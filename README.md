@@ -32,5 +32,5 @@
 > p.s. 很真诚的感谢你们可以star我的项目——用来辟邪
 
 # 捐赠
-如果你喜欢作(dai)者(ma), 那么请作者喝一杯咖啡吧
+> 如果你喜欢作(dai)者(ma), 那么请作者喝一杯咖啡吧
 ![WechatPay](https://github.com/wilhantian/GameIdea/raw/master/docs/wechat-pay.png)
