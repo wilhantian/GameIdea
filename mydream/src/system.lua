@@ -113,13 +113,13 @@ function RenderSystem:init()
 end
 
 function RenderSystem:process(e, dt)
-    local x, y = e.pos.x, e.pos.y
     local anim = e.anim
     local sprite = e.sprite
-    local offset = e.offset or {}
-    local rotate = e.rotate or 0
-    local scaleX, scaleY = e.scale and e.scale.x or 1, e.scale and e.scale.y or 1
-    local offsetX, offsetY = e.offset and e.offset.x or 0, e.offset and e.offset.y or 0
+
+    local x,y,
+        rotate,
+        scaleX,scaleY,
+        offsetX,offsetY = self:getRenderInfo(e)
 
     if e.flash then -- 闪烁组件
         e.flash.curShowTime = e.flash.curShowTime + dt
@@ -139,15 +139,35 @@ function RenderSystem:process(e, dt)
         drawList[e.layer]:add(function()
             if anim.curAnim then
                 anim.curAnim:update(dt)
-                anim.curAnim:draw(sprite, x, y, rotate, scaleX, scaleY, offsetX * -1, offsetY * -1)
+                anim.curAnim:draw(sprite, x, y, rotate, scaleX, scaleY, offsetX, offsetY)
             end
         end, y + (h + offsetY) * scaleY) -- fixme 性能问题
+
+        if e.layer == LayerType.Core then -- 动态层添加到睡眠反射阴影
+            drawList[LayerType.Reflect]:add(function()
+                if anim.curAnim then
+                    local r, g, b, a = love.graphics.getColor()
+                    love.graphics.setColor(255,255,255,120)
+                    anim.curAnim:draw(sprite, x, y + (h - offsetY)*scaleY*2, rotate, scaleX, -scaleY, offsetX, offsetY)
+                    love.graphics.setColor(r, g, b, a)
+                end
+            end, y + (h + offsetY) * scaleY)
+        end
+
     elseif sprite then
         w, h = sprite:getDimensions()
         drawList[e.layer]:add(function()
-            love.graphics.draw(sprite, x, y, rotate, scaleX, scaleY, offsetX * -1, offsetY * -1)
+            love.graphics.draw(sprite, x, y, rotate, scaleX, scaleY, offsetX, offsetY)
         end, y + (h + offsetY) * scaleY) -- fixme 性能问题
+
+        if e.layer == LayerType.Core then -- 动态层添加到睡眠反射阴影
+            drawList[LayerType.Reflect]:add(function()
+                love.graphics.draw(sprite, x, y + (h - offsetY)*scaleY*2, rotate, scaleX, -scaleY, offsetX, offsetY)
+            end, y + (h + offsetY) * scaleY)
+        end
     end
+
+
 
     if DEBUG_AABB then -- 碰撞区域调试
         drawList[e.layer]:add(function()
@@ -210,6 +230,53 @@ end
 function RenderSystem:onAdd(e)
     self:onStateOrDirChanged(e)
 end
+
+-- 获取渲染信息
+-- x,y,rotate,scaleX,scaleY,offsetX,offsetY
+function RenderSystem:getRenderInfo(e)
+    local x, y = e.pos.x, e.pos.y
+    local offset = e.offset or {}
+    local rotate = e.rotate or 0
+    local scaleX, scaleY = e.scale and e.scale.x or 1, e.scale and e.scale.y or 1
+    local offsetX, offsetY = e.offset and e.offset.x or 0, e.offset and e.offset.y or 0
+    offsetX = -offsetX
+    offsetY = -offsetY
+    return x, y,
+           rotate,
+           scaleX, scaleY,
+           offsetX, offsetY
+end
+----------------------------------------------------
+-- 反射系统
+----------------------------------------------------
+ReflectSystem = tiny.processingSystem(class "ReflectSystem")
+
+function ReflectSystem:init(renderSys, camera, canvas)
+    self.filter = tiny.requireAll("reflect")
+    self.renderSys = renderSys
+    self.camera = camera
+    self.canvas = canvas
+end
+
+function ReflectSystem:preProcess(dt)
+    self.lastCanvas = love.graphics.getCanvas()
+    love.graphics.setCanvas(self.canvas)
+    love.graphics.clear(0, 0, 0, 255)
+    print('begin')
+end
+
+function ReflectSystem:postProcess(dt)
+    love.graphics.setCanvas(self.lastCanvas)
+    print('end')
+end
+
+function ReflectSystem:process(e, dt)
+    local reflect = e.reflect
+    local x,y,r,sx,sy,ox,oy = self.renderSys:getRenderInfo(e)
+    x, y = self.camera:toWorld(x, y)
+    love.graphics.draw(reflect.mask,x,y,r,sx,sy,ox,oy)
+end
+
 ----------------------------------------------------
 -- 碰撞系统
 ----------------------------------------------------

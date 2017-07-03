@@ -41,7 +41,9 @@ DirType = {
 -- 层级类型
 LayerType = {
     Floor = 1,
-    Core = 2,
-    Light = 3,
-    Debug = 4
+    Water = 2,
+    Reflect = 3,
+    Core = 4,
+    Light = 5,
+    Debug = 6
 }

@@ -18,6 +18,8 @@ events = Events:new()
 
 drawList = {}
 drawList[LayerType.Floor] = SortFunc()
+drawList[LayerType.Water] = SortFunc()
+drawList[LayerType.Reflect] = SortFunc()
 drawList[LayerType.Core] = SortFunc()
 drawList[LayerType.Light] = SortFunc()
 drawList[LayerType.Debug] = SortFunc()
@@ -122,8 +124,8 @@ local hero = {
 		left = 'a',
 		right = 'd'
 	},
-	coreLayer = true, -- 渲染层级
-    layer = LayerType.Light, -- 层级
+	-- coreLayer = true, -- 渲染层级
+    layer = LayerType.Core, -- 层级
 	state = { -- 状态
 		curState = StateType.Stand
 	},
@@ -139,7 +141,8 @@ local hero = {
 		g = 0.6,
 		b = 0.2,
 		a = 1
-	}
+	},
+
 }
 
 local heroB = {
@@ -147,7 +150,7 @@ local heroB = {
 		type = ColsType.Monster,
 		mask = {"hero", "hero"},
 		w = 100,
-		h = 100
+		h = 30
 	},
 	move = {
 		mask = function()end,
@@ -157,11 +160,14 @@ local heroB = {
 		}
 	},
 	pos = {
-		x = 200, 
-		y = 200 
+		x = 250, 
+		y = 300 
 	},
+	offset = { -- 偏移量(主要用于sprite的位置)
+        x = 5,
+        y = -75
+    },
     sprite = newImage("res/hero/Run__001.png"),
-	-- bgLayer = true,
     layer = LayerType.Core,
     health = {
         hp = 2,
@@ -172,7 +178,7 @@ local heroB = {
 	}, 
 	lights = {
 		x = 40,
-		y = 50,
+		y = -10,
 		w = 120,
 		h = 100,
 		r = 0,
@@ -189,23 +195,56 @@ local heroB = {
 	}
 }
 
+local waterEntity = {
+	pos = {x=240, y=320},
+	sprite = newImage("res/water.png"),
+	layer = LayerType.Water,
+	reflect = {
+		mask = newImage("res/water_mask.png")
+	}
+}
+
+local waterEntityB = {
+	pos = {x=280, y=460},
+	sprite = newImage("res/water.png"),
+	layer = LayerType.Water,
+	reflect = {
+		mask = newImage("res/water_mask.png")
+	}
+}
+
 local bg = {
 	pos = {x=0, y=0},
-	sprite = newImage("res/timg.jpeg"),
+	sprite = newImage("res/timg.jpg"),
 	lightLayer = true,
     layer = LayerType.Floor
 }
 
-local colsSys = CollisionSystem()
-local stateSys = StateSystem()
+local canvas = love.graphics.newCanvas()
+local reflectCanvas = love.graphics.newCanvas()
 
 -- 灯光Shader
 local pixelcode = love.filesystem.read("res/lights.fsh")
 local vertexcode = love.filesystem.read("res/lights.vfx")
 local sceneShader = love.graphics.newShader(pixelcode, vertexcode)
 
+-- maskShader
+local mask_shader = love.graphics.newShader[[
+   vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
+      if (Texel(texture, texture_coords).rgb == vec3(0.0)) {
+         // a discarded pixel wont be applied as the stencil.
+         discard;
+      }
+      return vec4(1.0);
+   }
+]]
+
 -- 镜头
 local camera = gamera.new(0, 0, 1500, 1500)
+
+local colsSys = CollisionSystem()
+local stateSys = StateSystem()
+local renderSys = RenderSystem()
 
 world = tiny.world(
 	LightsSystem(sceneShader, camera),
@@ -216,11 +255,13 @@ world = tiny.world(
 	MeleeSystem(colsSys),
     HealthSystem(),
 	CameraSystem(camera),
-	RenderSystem(),
+	renderSys,
 	ControllerSystem(stateSys),
+	ReflectSystem(renderSys, camera, reflectCanvas),
 	bg,
 	hero,
-	heroB
+	heroB,
+	waterEntity,waterEntityB
 )
 
 push:setupScreen(DESIGN_WIDTH, DESIGN_HEIGHT, love.graphics.getWidth(), love.graphics.getHeight(), {
@@ -235,7 +276,7 @@ function love.load()
     if FULL_SCREEN then
         love.window.setFullscreen(true)
     end
-
+	
 	if SHOW_FPS then
 		fpsGraph = debugGraph:new('fps', 0, 0)
 		memGraph = debugGraph:new('mem', 0, 30)
@@ -253,14 +294,21 @@ end
 
 function love.draw()
     local dt = love.timer.getDelta()
-
-    push:start()
-		love.graphics.setShader(sceneShader)
+	
+	push:start()
+		local ca = love.graphics.getCanvas()
+		love.graphics.setCanvas(canvas)
+		love.graphics.clear()
         camera:draw(function(l,t,w,h)
             world:update(dt)
-            render()
+            render(l,t,w,h)
         end)
+		love.graphics.setCanvas(ca)
+		
+		love.graphics.setShader(sceneShader)
+		love.graphics.draw(canvas)
 		love.graphics.setShader()
+
         drawGrid() -- 绘制相机调试网格
         drawFPS() -- 绘制FPS
     push:finish()
@@ -270,6 +318,7 @@ function love.resize(w, h)
     push:resize(w, h)
 end
 
+-- 绘制FPS
 function drawFPS()
 	if SHOW_FPS then
 		fpsGraph:draw()
@@ -277,19 +326,37 @@ function drawFPS()
 	end
 end
 
-function render()
+-- 绘制反射mask层
+function drawReflectMask()
+	local lastShader = love.graphics.getShader()
+	love.graphics.setShader(mask_shader)
+	love.graphics.draw(reflectCanvas)
+	love.graphics.setShader(lastShader)
+end
+
+-- 渲染所有层
+function render(l,t,w,h)
     renderLayer(drawList[LayerType.Floor])
+	renderLayer(drawList[LayerType.Water])
+	love.graphics.stencil(drawReflectMask, "replace", 1)
+	love.graphics.setStencilTest("greater", 0)
+		renderLayer(drawList[LayerType.Reflect])
+	love.graphics.setStencilTest()
     renderLayer(drawList[LayerType.Core])
     renderLayer(drawList[LayerType.Light])
     renderLayer(drawList[LayerType.Debug])
+
+	-- love.graphics.draw(reflectCanvas)
 end
 
+-- 渲染单个层
 function renderLayer(dl)
     dl:sort()
     dl:call()
     dl:clear()
 end
 
+-- 绘制网格
 function drawGrid()
 	if SHOW_GRID then
 		local lw, lh = push:getWidth(), push:getHeight()
